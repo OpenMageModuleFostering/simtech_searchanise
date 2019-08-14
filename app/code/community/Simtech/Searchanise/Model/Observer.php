@@ -350,10 +350,10 @@ class Simtech_Searchanise_Model_Observer
             $isActiveOld = null;
             $storeOld = Mage::app()->getStore($store->getId());
             
-            if (empty($storeOld)) {
+            if ($storeOld) {
                 $isActiveOld = $storeOld->getIsActive();
             }
-            
+                        
             if ($isActiveOld != $isActive) {
                 if (Mage::helper('searchanise/ApiSe')->signup($store, false, false) == true) {
                     if ($isActive) {

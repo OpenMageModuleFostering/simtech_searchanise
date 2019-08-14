@@ -425,7 +425,33 @@ class Simtech_Searchanise_Helper_ApiSe
         
         return $ret;
     }
-    
+
+    public static function setInsalledModuleVersion($value = null)
+    {
+        self::setSetting('installed_module_version', $value, self::CONFIG_PREFIX);
+        
+        return true;
+    }
+
+    public static function getInsalledModuleVersion()
+    {
+        return (string) self::getSetting('installed_module_version', self::CONFIG_PREFIX);
+    }
+
+    public static function updateInsalledModuleVersion()
+    {
+        $currentVersion = (string) Mage::getConfig()->getModuleConfig("Simtech_Searchanise")->version;
+
+        return self::setInsalledModuleVersion($currentVersion);
+    }
+
+    public static function checkModuleIsUpdated()
+    {
+        $currentVersion = Mage::getConfig()->getModuleConfig("Simtech_Searchanise")->version;
+
+        return self::getInsalledModuleVersion() != $currentVersion;
+    }
+
     public static function getServerVersion()
     {
         return self::getSetting('server_version');
@@ -715,6 +741,9 @@ class Simtech_Searchanise_Helper_ApiSe
             return;
         }
         self::setNotificationAsyncComleted(false);
+
+        // Delete all exist queue, need if exists error
+        Mage::getModel('searchanise/queue')->clearActions($curStore);
         
         Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_PREPARE_FULL_IMPORT, NULL, $curStore);
         
@@ -843,11 +872,11 @@ class Simtech_Searchanise_Helper_ApiSe
         return self::getExportStatus($store) == self::EXPORT_STATUS_DONE;
     }
     
-    public static function getExportStatuses()
+    public static function getExportStatuses($store = null)
     {
         $ret = array();
-        $stores = Mage::app()->getStores();
-        
+        $stores = self::getStores($store);
+
         if (!empty($stores)) {
             foreach ($stores as $store) {
                 $ret[$store->getId()] = self::getExportStatus($store);
@@ -976,7 +1005,8 @@ class Simtech_Searchanise_Helper_ApiSe
                             self::sendAddonStatusRequest('disabled', $store);
                         }
                     }
-                    
+                    $connected = true;
+
                     continue;
                 }
                 
@@ -1056,31 +1086,35 @@ class Simtech_Searchanise_Helper_ApiSe
         return $connected;
     }
     
-    public static function getMinMaxProductId()
+    public static function getMinMaxProductId($store = null)
     {
         $start = 0;
         $max = 0;
-        $start_collection = Mage::getModel('catalog/product')
+        $startCollection = Mage::getModel('catalog/product')
             ->getCollection()
             ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_ASC)
-            ->setPageSize(1)
-            ->load()
-            ->toArray();
+            ->setPageSize(1);
+        if ($store) {
+            $startCollection = $startCollection->addStoreFilter($store);
+        }
+        $startCollection = $startCollection->load()->toArray();
         
-        $max_collection = Mage::getModel('catalog/product')
+        $maxCollection = Mage::getModel('catalog/product')
             ->getCollection()
             ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_DESC)
-            ->setPageSize(1)
-            ->load()
-            ->toArray();
-        
-        if (!empty($start_collection)) {
-            $start = reset($start_collection);
+            ->setPageSize(1);
+        if ($store) {
+            $maxCollection = $maxCollection->addStoreFilter($store);
+        }
+        $maxCollection = $maxCollection->load()->toArray();
+
+        if (!empty($startCollection)) {
+            $start = reset($startCollection);
             $start = (int) $start['entity_id'];
         }
         
-        if (!empty($max_collection)) {
-            $max = reset($max_collection);
+        if (!empty($maxCollection)) {
+            $max = reset($maxCollection);
             $max = (int) $max['entity_id'];
         }
         
@@ -1178,18 +1212,41 @@ class Simtech_Searchanise_Helper_ApiSe
 
         return $filterableInSearchFiltersIds;
     }
-    
+
     public static function checkStartAsync()
     {
         $ret = false;
         $q = Mage::getModel('searchanise/queue')->getNextQueue();
-        
+
         if (!empty($q)) {
             //Note: $q['started'] can be in future.
             if ($q['status'] == Simtech_Searchanise_Model_Queue::STATUS_PROCESSING && ($q['started'] + self::getMaxProcessingTime() > self::getTime())) {
                 $ret = false;
 
-            } elseif ($q['error_count'] == self::getMaxErrorCount()) {
+            } elseif ($q['error_count'] >= self::getMaxErrorCount()) {
+                if ($q['store_id']) {
+                    $store = Mage::app()->getStore($q['store_id']);
+                } else {
+                    $store = null;
+                }
+
+                $statuses = self::getExportStatuses($store);
+                if ($statuses) {
+                    foreach ($statuses as $statusKey => $status) {
+                        if ($status != self::EXPORT_STATUS_SYNC_ERROR) {
+                            if ($store) {
+                                self::setExportStatus(self::EXPORT_STATUS_SYNC_ERROR, $store);
+                            } else {
+                                $stores = self::getStores();
+                                foreach ($stores as $stKey => $_st) {
+                                    self::setExportStatus(self::EXPORT_STATUS_SYNC_ERROR, $_st);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 $ret = false;
                 
             } else {
@@ -1235,7 +1292,7 @@ class Simtech_Searchanise_Helper_ApiSe
                 return Simtech_Searchanise_Model_Queue::STATUS_PROCESSING;
             }
             
-            if ($q['error_count'] == self::getMaxErrorCount()) {
+            if ($q['error_count'] >= self::getMaxErrorCount()) {
                 self::setExportStatus(self::EXPORT_STATUS_SYNC_ERROR, $store);
                 
                 return Simtech_Searchanise_Model_Queue::STATUS_DISABLED;
@@ -1269,7 +1326,7 @@ class Simtech_Searchanise_Helper_ApiSe
                 
                 $sqls_arr = array();
                 
-                list($start, $max) = self::getMinMaxProductId();
+                list($start, $max) = self::getMinMaxProductId($store);
                 
                 do {
                     $end = $start + $step;

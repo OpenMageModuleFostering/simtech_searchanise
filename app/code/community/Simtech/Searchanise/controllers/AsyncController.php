@@ -36,8 +36,6 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
     */
     public function preDispatch()
     {
-        Mage::app()->setCurrentStore('admin');
-
         // Do not start standart session
         $this->setFlag('', self::FLAG_NO_START_SESSION, 1); 
         $this->setFlag('', self::FLAG_NO_CHECK_INSTALLATION, 1);

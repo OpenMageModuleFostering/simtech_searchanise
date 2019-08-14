@@ -101,7 +101,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         if (in_array($type, self::$_searchaniseTypes)) {
             if ($type == self::TEXT_FIND) {
                 $params['sortBy']    = 'relevance';
-                $params['sortOrder'] = 'desc';
+                $params['sortOrder'] = 'asc';
 
             } elseif ($type == self::TEXT_ADVANCED_FIND) {
                 $params['sortBy']    = 'title';

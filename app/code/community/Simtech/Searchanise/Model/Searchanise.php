@@ -122,6 +122,8 @@ class Simtech_Searchanise_Model_Searchanise extends Mage_Core_Model_Abstract
         }
         
         if ($attribute == 'relevance') {
+            // 'relevance' always 'asc'
+            $dir = 'asc';
             $product_ids = $this
                 ->getSearchaniseRequest()
                 ->getProductIdsString();

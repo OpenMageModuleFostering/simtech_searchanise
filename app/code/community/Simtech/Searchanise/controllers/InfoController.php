@@ -63,6 +63,11 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 Mage::helper('searchanise/ApiSe')->checkImportIsDone();
                 
                 $options = Mage::helper('searchanise/ApiSe')->getAddonOptions();
+                if (!$options) {
+                    $options = array();
+                }
+                $options['next_queue'] = Mage::getModel('searchanise/queue')->getNextQueue();
+                $options['type_async'] = Mage::helper('searchanise/ApiSe')->getTypeAsync();
 
                 if ($visual) {
                     Mage::helper('searchanise/ApiSe')->printR($options);

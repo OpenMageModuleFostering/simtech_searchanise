@@ -11,6 +11,7 @@
 * PLEASE READ THE FULL TEXT  OF THE SOFTWARE  LICENSE   AGREEMENT  IN  THE *
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
+
 $installer = $this;
 
 $installer->startSetup();
@@ -26,7 +27,7 @@ $installer->run(
         `value` text COMMENT 'Config Value',
         PRIMARY KEY (`config_id`),
         UNIQUE KEY `UNQ_CORE_CONFIG_DATA_SCOPE_SCOPE_ID_PATH` (`scope`,`scope_id`,`path`)
-    ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Config Data' AUTO_INCREMENT=94;
+    ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='Config Data Searchanise';
 
     DROP TABLE IF EXISTS {$this->getTable('searchanise_queue')};
     CREATE TABLE IF NOT EXISTS {$this->getTable('searchanise_queue')} (
@@ -39,7 +40,7 @@ $installer->run(
         `status` enum('pending','processing') DEFAULT 'pending',
         PRIMARY KEY (`queue_id`),
         KEY `status` (`status`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Queue tasks for Searchanise';
     "
 );
 

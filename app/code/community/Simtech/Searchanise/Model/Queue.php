@@ -91,29 +91,45 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
         return true;
     }
     
-    public function getNextQueueArray($queue_id = null)
+    public function getNextQueueArray($queueId = null, $flagIgnoreError = false)
     {
         $collection = $this->getCollection()
             ->addOrder('queue_id', 'ASC')
             ->setPageSize(1);
         
-        if (!empty($queue_id)) {
-            $collection->addFieldToFilter('queue_id', array("gt" => $queue_id));
+        if (!empty($queueId)) {
+            $collection = $collection->addFieldToFilter('queue_id', array('gt' => $queueId));
         }
-        
+
+        // Not use in current version.
+        if ($flagIgnoreError) {
+            $collection = $collection->addFieldToFilter('error_count', array('lt' => Mage::helper('searchanise/ApiSe')->getMaxErrorCount()));
+        }
+
         return $collection->load()->toArray();
     }
     
-    public function getNextQueue($queue_id = null)
+    public function getNextQueue($queueId = null)
     {
         $q = array();
-        $queue_arr = self::getNextQueueArray();
+        $queueArr = self::getNextQueueArray($queueId);
         
-        if (!empty($queue_arr['items'])) {
-            $q = reset($queue_arr['items']);
+        if (!empty($queueArr['items'])) {
+            $q = reset($queueArr['items']);
         }
         
         return $q;
+    }
+
+    public function clearActions($store = null)
+    {
+        $collection = Mage::getModel('searchanise/queue')->getCollection();
+
+        if ($store) {
+            $collection = $collection->addFilter('store_id', $store->getId());
+        }
+
+        return $collection->load()->delete();
     }
     
     public function addAction($action, $data = NULL, $cur_store = null, $cur_store_id = null)
@@ -130,11 +146,8 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
             $stores = Mage::helper('searchanise/ApiSe')->getStores($cur_store, $cur_store_id);
             
             if ($action == self::ACT_PREPARE_FULL_IMPORT && !empty($cur_store)) {
-                // Trucate queue for all
-                Mage::getModel('searchanise/queue')
-                    ->getCollection()
-                    ->addFilter('store_id', $cur_store->getId())
-                    ->clear();
+                // Truncate queue for all
+                Mage::getModel('searchanise/queue')->clearActions($cur_store);
             }
             
             foreach ($data as $d) {
@@ -235,11 +248,10 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
                 $product = Mage::getModel('catalog/product')
                     ->load($productId);
                 
-                if (!empty($product)) {
-                    $storeIds = $product->getStoreIds();
+                if ($product) {
+                    $storeIds = $product->getStoreIds();                
+                    Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE, $productId, null, $storeIds);
                 }
-                
-                Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE, $productId, null, $storeIds);
             }
         }
         

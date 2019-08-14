@@ -529,8 +529,11 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
     private static function getProducts($productIds = null, $store = null, $flagAddMinimalPrice = false, $customerGroupId = null)
     {
-        Mage::app("default")->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
-
+        // need for generate correct url
+        if ($store) {
+            Mage::app()->setCurrentStore($store->getId());
+        }
+        
         $products = Mage::getModel('catalog/product')
             ->getCollection()
             ->addAttributeToSelect('*')
@@ -569,10 +572,6 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     // Main functions //
     public static function generateProductsXML($productIds = null, $store = null, $flagAddMinimalPrice = false)
     {
-        if ($store) {
-            // need for generate correct url
-            Mage::app()->setCurrentStore($store->getId());
-        }
         $ret = '';
 
         $products = self::getProducts($productIds, $store, $flagAddMinimalPrice);
