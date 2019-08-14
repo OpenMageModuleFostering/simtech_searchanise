@@ -652,7 +652,7 @@ class Simtech_Searchanise_Helper_ApiSe
 
     public static function showWarningFlatTables()
     {
-        if (Mage::helper('catalog/product_flat')->isEnabled() && count(self::getStores()) > 1) {
+        if (Mage::getStoreConfigFlag(Mage_Catalog_Helper_Product_Flat::XML_PATH_USE_PRODUCT_FLAT) && count(self::getStores()) > 1) {
             Mage::helper('searchanise/ApiSe')->setNotification('W', Mage::helper('searchanise')->__('Searchanise'), Mage::helper('searchanise')->__("Please disable the Use Flat Catalog Product (Configuration -> Catalog -> Frontend) setting if you have multiple store views. Otherwise, Searchanise may work incorrectly."));
         }
 

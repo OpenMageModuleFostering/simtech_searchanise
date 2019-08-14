@@ -29,6 +29,7 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
         }
         // Need for generate correct url.
         if ($store) {
+            $category->getUrlInstance()->setStore($store->getId());
             Mage::app()->setCurrentStore($store->getId());
         } else {
             Mage::app()->setCurrentStore(0);

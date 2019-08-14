@@ -29,21 +29,12 @@ class Simtech_Searchanise_Model_Observer
      */
     public function autoSync()
     {
-        Mage::helper('searchanise/ApiSe')->log('start cron autoSync', 'information');
-        
         // only run if set to
         $cronAsyncEnabled = Mage::helper('searchanise/ApiSe')->checkCronAsync();
         if ($cronAsyncEnabled) {
-            Mage::helper('searchanise/ApiSe')->log('cron is enabled', 'information');
             $result = Mage::helper('searchanise/ApiSe')->async();
-            Mage::helper('searchanise/ApiSe')->log($result, 'information');
-                        
-        } else {
-            Mage::helper('searchanise/ApiSe')->log('cron is not enabled', 'information');
         }
-        
-        Mage::helper('searchanise/ApiSe')->log('end cron autoSync', 'information');
-        
+
         return $this;
     }
 

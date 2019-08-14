@@ -302,7 +302,13 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
         if (empty($received)) {
             return $this;
         }
-        $result = Mage::helper('core')->jsonDecode($received);
+
+        try {
+            $result = Mage::helper('core')->jsonDecode($received);
+        } catch (Exception $e) {
+            return $this;
+        }
+
         if (Mage::helper('searchanise')->checkDebug()) {
             Mage::helper('searchanise/ApiSe')->printR($result);
         }

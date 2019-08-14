@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>3.0.3</version>
+            <version>3.0.4</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -599,7 +599,7 @@
                 <server_version>1.3</server_version>
                 <async_memory_limit>512</async_memory_limit>
                 <search_timeout>3</search_timeout>
-                <request_timeout>10</request_timeout>
+                <request_timeout>25</request_timeout>
                 <ajax_async_timeout>1</ajax_async_timeout>
                 <products_per_pass>100</products_per_pass>
                 <categories_per_pass>500</categories_per_pass>
