@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>3.1.4</version>
+            <version>3.1.5</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -100,10 +100,14 @@
                 </all>
                 <admin>
                     <children>
-                        <Simtech_Searchanise>
-                            <title>Searchanise Module</title>
-                            <sort_order>1</sort_order>
-                        </Simtech_Searchanise>
+                        <catalog>
+                            <children>
+                                <searchanise>
+                                    <title>Searchanise Module</title>
+                                    <sort_order>1</sort_order>
+                                </searchanise>
+                            </children>
+                        </catalog>
                         <system>
                             <children>
                                 <config>
@@ -153,7 +157,6 @@
             <!-- [v1.6] [v1.7] [v1.8] [v1.9] -->
             <!-- <catalog_resource>
                 <rewrite>
-                    <product_collection>Simtech_Searchanise_Model_Resource_Product_Collection</product_collection>
                     <layer_filter_attribute>Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute</layer_filter_attribute>
                     <layer_filter_price>Simtech_Searchanise_Model_Resource_Layer_Filter_Price</layer_filter_price>
                 </rewrite>

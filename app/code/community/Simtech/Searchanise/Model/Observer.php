@@ -86,11 +86,34 @@ class Simtech_Searchanise_Model_Observer
      */
     public function catalogProductSaveAfter(Varien_Event_Observer $observer)
     {
+        $product = $observer->getEvent()->getProduct();
         // fixme in the future
         // Add a check-up for changes of the parameters which are related to other languages and storefronts.
         //~ Mage::getModel('searchanise/queue')->addActionUpdateProduct($observer->getEvent()->getProduct(), $observer->getEvent()->getProduct()->getStoreId());
-        Mage::getModel('searchanise/queue')->addActionUpdateProduct($observer->getEvent()->getProduct());
-        
+        Mage::getModel('searchanise/queue')->addActionUpdateProduct($product);
+
+        if (!empty($product)) {
+            if ($product->getTypeID() == 'simple') { // Current product is a child?
+                $product_id = $product->getID();
+
+                if (!empty($product_id)) {
+                    $parent_ids_arr = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($product_id);
+                    $parent_ids_arr = array_merge($parent_ids_arr, Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product_id));
+                    $parent_ids_arr = array_merge($parent_ids_arr, Mage::getModel('bundle/product_type')->getParentIdsByChild($product_id));
+
+                    if (!empty($parent_ids_arr)) { // If there is one or more parent products.
+                        foreach ($parent_ids_arr as $product_id) { // Update all detected parent products.
+                            $product = Mage::getModel('catalog/product')->load($product_id);
+
+                            if (!empty($product)) {
+                                Mage::getModel('searchanise/queue')->addActionUpdateProduct($product);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         return $this;
     }
     

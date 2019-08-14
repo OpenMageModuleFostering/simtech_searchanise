@@ -348,8 +348,10 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                                             $val = Mage::helper('searchanise/ApiSe')->escapingCharacters($val);
 
                                             if ($val != '') {
-                                                $queryBy = ($name == 'name')? 'title' : $name;
-                                                $queryBy = ($name == 'sku')? 'product_code' : $queryBy;
+                                                $queryBy = ($name == 'name') ? 'title' : $name;
+                                                $queryBy = ($name == 'sku') ? 'product_code' : $queryBy;
+                                                $queryBy = ($name == 'description') ? 'full_description' : $queryBy;
+                                                $queryBy = ($name == 'short_description') ? 'description' : $queryBy;
                                                 $params['queryBy'][$queryBy] = $val;
                                             }
                                         }

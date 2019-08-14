@@ -657,7 +657,7 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         // Show images without white field
         // Example: image 360 x 535 => 47 х 70
         if (Mage::helper('searchanise/ApiSe')->getResultsWidgetEnabled($store)) {
-            $image = self::getProductImageLink($product, false, 160, 160);
+            $image = self::getProductImageLink($product, false, 300, 300);
         } else {
             $image = self::getProductImageLink($product, false, 70, 70);
         }
@@ -1068,6 +1068,9 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
     private static function _getRequiredAttributes()
     {
         return array(
+            'name',
+            'short_description',
+            'sku',
             'status',
             'visibility',
             'price',
@@ -1124,6 +1127,33 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         // <system_attributes>
 
         } elseif ($attributeCode == 'name' || $attributeCode == 'sku' || $attributeCode == 'short_description') {
+            //for original
+            if ($attributeCode == 'short_description') {
+                $name    = 'description';
+                $sorting = 'N';
+                $weight  = self::WEIGHT_SHORT_DESCRIPTION;
+
+            } elseif ($attributeCode == 'name') {
+                $name    = 'title';
+                $sorting = 'Y';//always (for search results widget)
+                $weight  = self::WEIGHT_SHORT_TITLE;
+
+            } elseif ($attributeCode == 'sku') {
+                $name    = 'product_code';
+                $sorting = $sorting;
+                $weight  = self::WEIGHT_SHORT_TITLE;
+            }
+
+            $items[] = array(
+                'name'    => $name,
+                'title'   => $title,
+                'type'    => 'text',
+                'sorting' => $sorting,
+                'weight'  => $weight,
+                'text_search' => $textSearch,
+            );
+
+            // for grouped
             $type = 'text';
             $name  = 'se_grouped_' . $attributeCode;
             $sorting = 'N';

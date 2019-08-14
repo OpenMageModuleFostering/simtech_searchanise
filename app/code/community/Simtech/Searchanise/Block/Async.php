@@ -28,7 +28,9 @@ class Simtech_Searchanise_Block_Async extends Mage_Core_Block_Text
         $html = '';
 
         if (Mage::helper('searchanise/ApiSe')->checkStatusModule()) {
+            $storeId = '';
             if (Mage::app()->getStore()->isAdmin()) {
+                $storeId = Mage::app()->getDefaultStoreView()->getId();
                 $textNotification = '';
                 if (Mage::helper('searchanise/ApiSe')->checkModuleIsUpdated()) {
                     Mage::helper('searchanise/ApiSe')->updateInsalledModuleVersion();
@@ -48,7 +50,7 @@ class Simtech_Searchanise_Block_Async extends Mage_Core_Block_Text
             }
 
             if (Mage::helper('searchanise/ApiSe')->checkStartAsync()) {
-                $asyncUrl = Mage::helper('searchanise/ApiSe')->getAsyncUrl(false);
+                $asyncUrl = Mage::helper('searchanise/ApiSe')->getAsyncUrl(false, $storeId);
 
                 if (Mage::helper('searchanise/ApiSe')->checkObjectAsync()) {
                     $html .= "\n<object data=\"$asyncUrl\" width=\"0\" height=\"0\" type=\"text/html\"></object>\n";

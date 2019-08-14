@@ -126,13 +126,21 @@ class Simtech_Searchanise_Model_Resource_Fulltext_Collection extends Mage_Catalo
 
     public function _loadEntities($printQuery = false, $logQuery = false)
     {
+        $args = func_get_args();
+
+        if (!$this->checkSearchaniseResult()) {
+            return call_user_func_array(array(__CLASS__, 'parent::_loadEntities'), $args);
+        }
+
         $pageSize = $this->_pageSize;
         $this->_pageSize = false;
-        $args = func_get_args();
+
         call_user_func_array(array(__CLASS__, 'parent::_loadEntities'), $args);
+
         $this->_pageSize = $pageSize;
+
         return $this;
-    }     
+    }
 
     public function getSize()
     {

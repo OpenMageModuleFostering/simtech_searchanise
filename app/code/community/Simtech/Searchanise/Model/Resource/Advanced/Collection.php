@@ -114,4 +114,49 @@ class Simtech_Searchanise_Model_Resource_Advanced_Collection extends Mage_Catalo
     {
         return parent::getLastPageNumber();
     }
+
+    public function _loadEntities($printQuery = false, $logQuery = false)
+    {
+        $args = func_get_args();
+
+        if (!$this->checkSearchaniseResult()) {
+            return call_user_func_array(array(__CLASS__, 'parent::_loadEntities'), $args);
+        }
+
+        $pageSize = $this->_pageSize;
+        $this->_pageSize = false;
+
+        call_user_func_array(array(__CLASS__, 'parent::_loadEntities'), $args);
+
+        $this->_pageSize = $pageSize;
+
+        return $this;
+    }
+
+    public function getSize()
+    {
+        if ($this->checkSearchaniseResult()) {
+            return $this->getSearchaniseRequest()->getTotalProduct();
+        } else {
+            return parent::getSize();
+        }
+    }
+
+    public function addCountToCategories($categoryCollection)
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true) || !$this->checkSearchaniseResult()) {
+            return parent::addCountToCategories($categoryCollection);
+        }
+
+        foreach ($categoryCollection as $category) {
+            $category->setProductCount($this->getSearchaniseRequest()->getCountProductCategory($category));
+        }
+
+        return $this;
+    }
+
+    public function setVisibility($visibility)
+    {
+        return true;
+    }
 }

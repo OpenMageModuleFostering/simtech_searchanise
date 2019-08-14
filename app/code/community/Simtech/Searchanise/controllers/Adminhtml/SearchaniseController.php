@@ -18,7 +18,7 @@ class Simtech_Searchanise_Adminhtml_SearchaniseController extends Mage_Adminhtml
 
     protected function _initAction()
     {
-        $this->_setActiveMenu('searchanise/index/index');
+        $this->_setActiveMenu('catalog/searchanise');
         
         return $this;
     }
@@ -28,7 +28,7 @@ class Simtech_Searchanise_Adminhtml_SearchaniseController extends Mage_Adminhtml
      */
     public function indexAction()
     {
-        $this->loadLayout();
+        $this->loadLayout()->_initAction();
         
         $this->_addContent($this->getLayout()->createBlock('core/text', 'inner-wrap-start')->setText('<div id="searchanise-settings-wrapper">'));
         $this->_addContent(
@@ -93,5 +93,15 @@ class Simtech_Searchanise_Adminhtml_SearchaniseController extends Mage_Adminhtml
         }
         
         return $this;
+    }
+
+    /**
+     * Check is allowed access to action
+     *
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('catalog/searchanise');
     }
 }
