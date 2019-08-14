@@ -14,6 +14,7 @@
 class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Action
 {
     protected $_notUseHttpRequestText = null;
+    protected $_flShowStatusAsync = null;
     
     public function getNotUseHttpRequestText()
     {
@@ -27,6 +28,20 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
     public function checkNotUseHttpRequest()
     {
         return ($this->getNotUseHttpRequestText() == Simtech_Searchanise_Helper_ApiSe::NOT_USE_HTTP_REQUEST_KEY) ? true : false;
+    }
+
+    protected function getFlShowStatusAsync()
+    {
+        if (is_null($this->_flShowStatusAsync)) {
+            $this->_flShowStatusAsync = $this->getRequest()->getParam(Simtech_Searchanise_Helper_ApiSe::FL_SHOW_STATUS_ASYNC);
+        }
+        
+        return $this->_flShowStatusAsync;
+    }
+
+    protected function checkShowSatusAsync()
+    {
+        return ($this->getFlShowStatusAsync() == Simtech_Searchanise_Helper_ApiSe::FL_SHOW_STATUS_ASYNC_KEY) ? true : false;
     }
 
     /**
@@ -71,8 +86,13 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
                     @set_time_limit(0);
                     
                     $result = Mage::helper('searchanise/ApiSe')->async();
+
+                    if ($this->checkShowSatusAsync()) {
+                        echo 'Searchanise status sync: ';
+                        echo $result;
+                    }
                     
-                    die($result);
+                    die();
                     
                 } else {
                     @ignore_user_abort(false);

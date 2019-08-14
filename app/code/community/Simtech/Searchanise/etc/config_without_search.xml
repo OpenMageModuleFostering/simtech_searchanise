@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>1.1.5</version>
+            <version>1.1.6</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -571,7 +571,7 @@
                 <max_processing_time>720</max_processing_time>
                 <max_search_request_length>8000</max_search_request_length>
                 <service_url>http://www.searchanise.com</service_url>
-                <cron_async_enabled>0</cron_async_enabled>
+                <cron_async_enabled>1</cron_async_enabled>
                 <ajax_async_enabled>0</ajax_async_enabled>
                 <!-- default sync init method -->
                 <object_async_enabled>1</object_async_enabled> 

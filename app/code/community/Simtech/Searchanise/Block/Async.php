@@ -21,7 +21,7 @@ class Simtech_Searchanise_Block_Async extends Mage_Core_Block_Text
 
         if ($autoInstallInBackground) {
             $signupUrl = Mage::helper("adminhtml")->getUrl(Mage::helper('searchanise/ApiSe')->getConnectLink());
-            $html .= "\n<object data=\"$signupUrl\" width=\"0\" height=\"0\"></object>\n";
+            $html .= "\n<object data=\"$signupUrl\" width=\"0\" height=\"0\" type=\"text/html\"></object>\n";
         } else {
             if (Mage::helper('searchanise/ApiSe')->signup(null, false) == true) {
                 Mage::helper('searchanise/ApiSe')->queueImport(null, false);
@@ -59,7 +59,7 @@ class Simtech_Searchanise_Block_Async extends Mage_Core_Block_Text
                 $asyncUrl = Mage::helper('searchanise/ApiSe')->getAsyncUrl(false);
 
                 if (Mage::helper('searchanise/ApiSe')->checkObjectAsync()) {
-                    $html .= "\n<object data=\"$asyncUrl\" width=\"0\" height=\"0\"></object>\n";
+                    $html .= "\n<object data=\"$asyncUrl\" width=\"0\" height=\"0\" type=\"text/html\"></object>\n";
                 }
 
                 if (Mage::helper('searchanise/ApiSe')->checkAjaxAsync()) {

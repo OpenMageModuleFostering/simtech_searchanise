@@ -23,55 +23,53 @@
 
 <?php
     Mage::helper('searchanise/ApiSe')->checkImportIsDone();
-    $searchanise_options = Mage::helper('searchanise/ApiSe')->getAddonOptions();
+    $searchaniseOptions = Mage::helper('searchanise/ApiSe')->getAddonOptions();
     
-    $searchanise_options['options_link'] = $this->getUrl(Mage::helper('searchanise/ApiSe')->getOptionsLink());
-    $searchanise_options['re_sync_link'] = $this->getUrl(Mage::helper('searchanise/ApiSe')->getReSyncLink());
-    $searchanise_options['connect_link'] = $this->getUrl(Mage::helper('searchanise/ApiSe')->getConnectLink());
+    $searchaniseOptions['options_link'] = $this->getUrl(Mage::helper('searchanise/ApiSe')->getOptionsLink());
+    $searchaniseOptions['re_sync_link'] = $this->getUrl(Mage::helper('searchanise/ApiSe')->getReSyncLink());
+    $searchaniseOptions['connect_link'] = $this->getUrl(Mage::helper('searchanise/ApiSe')->getConnectLink());
     
-    $se_service_url = Mage::helper('searchanise/ApiSe')->getServiceUrl(false);
+    $seServiceUrl = Mage::helper('searchanise/ApiSe')->getServiceUrl(false);
 ?>
 
 <script type="text/javascript">
 //<![CDATA[
     SearchaniseAdmin = {};
     
-    SearchaniseAdmin.host        = '<?php echo $se_service_url;?>';
-    SearchaniseAdmin.PrivateKey  = '<?php echo $searchanise_options['parent_private_key'];?>';
-    SearchaniseAdmin.OptionsLink = '<?php echo $searchanise_options['options_link'];?>';
-    SearchaniseAdmin.ReSyncLink  = '<?php echo $searchanise_options['re_sync_link'];?>';
-    SearchaniseAdmin.LastRequest = '<?php echo $searchanise_options['last_request'];?>';
-    SearchaniseAdmin.LastResync  = '<?php echo $searchanise_options['last_resync'];?>';
-    SearchaniseAdmin.ConnectLink = '<?php echo $searchanise_options['connect_link'];?>';
-    SearchaniseAdmin.AddonStatus = '<?php echo $searchanise_options['addon_status'];?>';
+    SearchaniseAdmin.host        = '<?php echo $seServiceUrl;?>';
+    SearchaniseAdmin.PrivateKey  = '<?php echo $searchaniseOptions['parent_private_key'];?>';
+    SearchaniseAdmin.OptionsLink = '<?php echo $searchaniseOptions['options_link'];?>';
+    SearchaniseAdmin.ReSyncLink  = '<?php echo $searchaniseOptions['re_sync_link'];?>';
+    SearchaniseAdmin.LastRequest = '<?php echo $searchaniseOptions['last_request'];?>';
+    SearchaniseAdmin.LastResync  = '<?php echo $searchaniseOptions['last_resync'];?>';
+    SearchaniseAdmin.ConnectLink = '<?php echo $searchaniseOptions['connect_link'];?>';
+    SearchaniseAdmin.AddonStatus = '<?php echo $searchaniseOptions['addon_status'];?>';
     
     SearchaniseAdmin.Engines = [];
     
     <?php
-        if(!empty($searchanise_options['parent_private_key'])) {
+        if (!empty($searchaniseOptions['parent_private_key'])) {
             $stores = Mage::app()->getStores();
             
-            if(!empty($stores))
-            {
-                foreach($stores as $k_store => $store)
-                {
-                    $price_format = Mage::helper('searchanise/ApiSe')->getPriceFormat($store);
-                    $private_key = $searchanise_options['private_key'][$store->getId()];
-                    $export_status = empty($searchanise_options['export_status'][$store->getId()]) ? 'none' : $searchanise_options['export_status'][$store->getId()];
-                    $price_format['after'] = $price_format['after'] ? 'true' : 'false';
+            if (!empty($stores)) {
+                foreach($stores as $keyStore => $store) {
+                    $priceFormat = Mage::helper('searchanise/ApiSe')->getPriceFormat($store);
+                    $privateKey = $searchaniseOptions['private_key'][$store->getId()];
+                    $exportStatus = empty($searchaniseOptions['export_status'][$store->getId()]) ? 'none' : $searchaniseOptions['export_status'][$store->getId()];
+                    $priceFormat['after'] = $priceFormat['after'] ? 'true' : 'false';
                     
-                    echo "SearchaniseAdmin.Engines.push({";
-                        echo "PrivateKey:   '{$private_key}',";
+                    echo 'SearchaniseAdmin.Engines.push({';
+                        echo "PrivateKey:   '{$privateKey}',";
                         echo "LangCode:     '{$store->getCode()}',";
                         echo "Name :        '{$store->getName()}',";
-                        echo "ExportStatus: '{$export_status}',";
-                        echo "PriceFormat: {";
-                            echo "rate :               '{$price_format['rate']}',";
-                            echo "decimals:            '{$price_format['decimals']}',";
-                            echo "decimals_separator:  '{$price_format['decimals_separator']}',";
-                            echo "thousands_separator: '{$price_format['thousands_separator']}',";
-                            echo "symbol:              '{$price_format['symbol']}',";
-                            echo "after:                {$price_format['after']}";
+                        echo "ExportStatus: '{$exportStatus}',";
+                        echo 'PriceFormat: {';
+                            echo "rate :               '{$priceFormat['rate']}',";
+                            echo "decimals:            '{$priceFormat['decimals']}',";
+                            echo "decimals_separator:  '{$priceFormat['decimals_separator']}',";
+                            echo "thousands_separator: '{$priceFormat['thousands_separator']}',";
+                            echo "symbol:              '{$priceFormat['symbol']}',";
+                            echo "after:                {$priceFormat['after']}";
                         echo "}";
                     echo "});";
                 }
@@ -81,4 +79,4 @@
 //]]>
 </script>
 
-<script type="text/javascript" src="<?php echo $se_service_url;?>/js/init.js"></script>
+<script type="text/javascript" src="<?php echo $seServiceUrl;?>/js/init.js"></script>

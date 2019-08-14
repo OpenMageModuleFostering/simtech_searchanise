@@ -23,25 +23,25 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
             return $html;
         }
 
-        $api_key = Mage::helper('searchanise/ApiSe')->getApiKey();
+        $apiKey = Mage::helper('searchanise/ApiSe')->getApiKey();
         
-        if (empty($api_key)) {
+        if (empty($apiKey)) {
             return $html;
         }
                 
-        $input_id = Mage::helper('searchanise/ApiSe')->getInputIdSearch();
-        if ($input_id == '') {
+        $inputId = Mage::helper('searchanise/ApiSe')->getInputIdSearch();
+        if ($inputId == '') {
             // Uncomment the lines below if it is necessary to disable search widget in frontend
             //~ return '';
         }
-        if (empty($input_id)) {
-            $input_id = 'search';
+        if (empty($inputId)) {
+            $inputId = 'search';
         }
         $union = 'Searchanise.AutoCmpParams.union = {};';
         $restrictBy = '';
 
-        $se_service_url    = Mage::helper('searchanise/ApiSe')->getServiceUrl();
-        $price_format      = Mage::helper('searchanise/ApiSe')->getPriceFormat();
+        $seServiceUrl = Mage::helper('searchanise/ApiSe')->getServiceUrl();
+        $priceFormat = Mage::helper('searchanise/ApiSe')->getPriceFormat($store);
         $searchWidgetsLink = Mage::helper('searchanise/ApiSe')->getSearchWidgetsLink(false);
 
         $union .= " Searchanise.AutoCmpParams.union.price = {};";
@@ -59,15 +59,15 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
             $restrictBy .= "\nSearchanise.AutoCmpParams.restrictBy.is_in_stock = '1';";
         }
 
-        $price_format['after'] = $price_format['after'] ? 'true' : 'false';
+        $priceFormat['after'] = $priceFormat['after'] ? 'true' : 'false';
         
         $html .= 
             "<script type=\"text/javascript\">
             //<![CDATA[
                 Searchanise = {};
-                Searchanise.host        = '{$se_service_url}';
-                Searchanise.api_key     = '{$api_key}';
-                Searchanise.SearchInput = '#{$input_id}';
+                Searchanise.host        = '{$seServiceUrl}';
+                Searchanise.api_key     = '{$apiKey}';
+                Searchanise.SearchInput = '#{$inputId}';
                 
                 Searchanise.AutoCmpParams = {};
                 {$union}
@@ -82,12 +82,12 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
                 Searchanise.AdditionalSearchInputs = '#name,#description,#sku';
 
                 Searchanise.options.PriceFormat = {
-                    rate :               '{$price_format['rate']}',
-                    decimals:            '{$price_format['decimals']}',
-                    decimals_separator:  '{$price_format['decimals_separator']}',
-                    thousands_separator: '{$price_format['thousands_separator']}',
-                    symbol:              '{$price_format['symbol']}',
-                    after:                {$price_format['after']}
+                    rate :               '{$priceFormat['rate']}',
+                    decimals:            '{$priceFormat['decimals']}',
+                    decimals_separator:  '{$priceFormat['decimals_separator']}',
+                    thousands_separator: '{$priceFormat['thousands_separator']}',
+                    symbol:              '{$priceFormat['symbol']}',
+                    after:                {$priceFormat['after']}
                 };
                 
                 (function() {

@@ -54,6 +54,9 @@ class Simtech_Searchanise_Helper_ApiSe
     const NOT_USE_HTTP_REQUEST     = 'not_use_http_request';
     const NOT_USE_HTTP_REQUEST_KEY = 'Y';
 
+    const FL_SHOW_STATUS_ASYNC     = 'show_status';
+    const FL_SHOW_STATUS_ASYNC_KEY = 'Y';
+
     public static function getParamNotUseHttpRequest()
     {
         return self::NOT_USE_HTTP_REQUEST . '=' . self::NOT_USE_HTTP_REQUEST_KEY;
@@ -329,10 +332,10 @@ class Simtech_Searchanise_Helper_ApiSe
     
     public static function getJsPriceFormat($store = null)
     {
-        if (empty($store)) {
+        if (!($store instanceof Mage_Core_Model_Store)) {
             return Mage::app()->getLocale()->getJsPriceFormat();
         }
-        
+                
         $format = Zend_Locale_Data::getContent(self::getLocaleCode($store), 'currencynumber');
         $symbols = Zend_Locale_Data::getList(self::getLocaleCode($store), 'symbols');
         
@@ -378,33 +381,44 @@ class Simtech_Searchanise_Helper_ApiSe
     
     public static function getPriceFormat($store = null)
     {
-        $format = self::getJsPriceFormat($store);
-        
-        if (empty($store)) {
-            $store = Mage::app()->getStore();
+        $jsPriceFormat = self::getJsPriceFormat($store);
+        // It is need after getJsPriceFormat, because the 'getJsPriceFormat' function has simple method for '$store = null'.
+        if (!($store instanceof Mage_Core_Model_Store)) {
+            $store = Mage::app()->getStore($store);
         }
-        
+
         // fixme if need
         // change $positionPrice for AdminPanelWidget like as customer area
-        $positionPrice = strpos($format['pattern'], '%s');
-        
-        $currency = Mage::app()->getLocale()->currency($store->getCurrentCurrencyCode());
-        $symbol = $currency->getSymbol(self::getDefaultCurrency($store), self::getLocaleCode($store));
-        
-        if (empty($symbol)) {
-            $symbol = str_replace('%s', '', $format['pattern']);
+        $positionPrice = strpos($jsPriceFormat['pattern'], '%s');
+
+        $symbol = str_replace('%s', '', $jsPriceFormat['pattern']);        
+        // fixme in the future
+        // need delete
+        // } else {
+        //     $currency = Mage::app()->getLocale()->currency($store->getCurrentCurrencyCode());
+        //     $symbol = $currency->getSymbol(self::getDefaultCurrency($store), self::getLocaleCode($store));
+
+        //     if (empty($symbol)) {
+        //         $symbol = str_replace('%s', '', $jsPriceFormat['pattern']);
+        //     }
+        // }
+
+        $seRate = 1;
+        $rate = $store->getCurrentCurrencyRate();
+        if (!empty($rate)) {
+            $seRate = 1 / $rate;
         }
-        
-        $ret = array(
-            'rate'                => $store->getCurrentCurrencyRate(),
-            'decimals'            => $format['precision'],
-            'decimals_separator'  => $format['decimalSymbol'],
-            'thousands_separator' => $format['groupSymbol'],
+
+        $priceFormat = array(
+            'rate'                => $seRate, // It requires inverse value.
+            'decimals'            => $jsPriceFormat['precision'],
+            'decimals_separator'  => $jsPriceFormat['decimalSymbol'],
+            'thousands_separator' => $jsPriceFormat['groupSymbol'],
             'symbol'              => $symbol,
             'after'               => $positionPrice == 0 ? true : false,
         );
-        
-        return $ret;
+
+        return $priceFormat;
     }
     
     /**
