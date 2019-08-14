@@ -102,7 +102,135 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
         return $imageLink;
     }
-    
+
+    /**
+     * getProductQty
+     *
+     * @param Mage_Catalog_Model_Product $product
+     * @param Mage_Core_Model_Store $store
+     * @param bool $flagWithChildrenProducts
+     * @return float
+     */
+    private static function getProductQty($product, $store, $flagWithChildrenProducts = true)
+    {
+        $quantity = 1;
+
+        $stockItem = self::getStockItem($product);
+        if ($stockItem) {
+            $manageStock = null;
+            if ($stockItem->getData('use_config_manage_stock')) {
+                $manageStock = Mage::getStoreConfig(Mage_CatalogInventory_Model_Stock_Item::XML_PATH_MANAGE_STOCK);
+            } else {
+                $manageStock = $stockItem->getData('manage_stock');
+            }
+
+            if (!$manageStock) {
+                $quantity = 1;
+            } else {
+                $isInStock = $stockItem->getIsInStock();
+
+                if (empty($isInStock)) {
+                    $quantity = 0;
+                } else {
+                    $quantity = $stockItem->getQty();
+
+                    if ($flagWithChildrenProducts) {
+                        // if CONFIGURABLE OR GROUPED OR BUNDLE
+                        if (($product->getData('type_id') == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) ||
+                            ($product->isSuper())) {
+                            $quantity = 1;
+
+                            // fixme in the future
+                            // maybe exist simple solution get `quantity` for TYPE_BUNDLE or TYPE_CONFIGURABLE product
+                            if ($typeInstance = $product->getTypeInstance()) {
+                                $requiredChildrenIds = $typeInstance->getChildrenIds($product->getId(), true);
+                                if ($requiredChildrenIds) {
+                                    $quantity = 0;
+                                    $childrenIds = array();
+                                    foreach ($requiredChildrenIds as $groupedChildrenIds) {
+                                        $childrenIds = array_merge($childrenIds, $groupedChildrenIds);
+                                    }
+                                    
+                                    $childrenProducts = self::getProducts($childrenIds, $store);
+
+                                    if ($childrenProducts) {
+                                        foreach ($childrenProducts as $childrenProductsKey => $childrenProduct) {
+                                            if ($childrenProduct) {
+                                                $quantity += self::getProductQty($childrenProduct, $store, false);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // end fixme
+                        }
+                    }
+                }
+            }
+        }
+
+        return $quantity;
+    }
+
+    /**
+     * getProductMinimalPrice
+     *
+     * @param Mage_Catalog_Model_Product $product
+     * @param Mage_Core_Model_Store $store
+     * @param bool $flagWithChildrenProducts
+     * @return float
+     */
+    private static function getProductMinimalPrice($product, $store, $flagWithChildrenProducts = true, $customerGroupId = null)
+    {
+        $minimalPrice = $product->getMinimalPrice();
+
+        if ($minimalPrice == '') {
+            $minimalPrice = $product->getFinalPrice();
+        }
+
+        if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
+            $_priceModel  = $product->getPriceModel();
+            if ($_priceModel) {
+                $minimalPrice = $_priceModel->getTotalPrices($product, 'min', null, false);
+            }
+
+        } elseif ($flagWithChildrenProducts) {
+            if ($product->isGrouped()) {
+                // fixme in the future
+                // maybe exist better solution get `minimalPrice` for `Grouped` product
+                if ($typeInstance = $product->getTypeInstance()) {
+                    $requiredChildrenIds = $typeInstance->getChildrenIds($product->getId(), true);
+                    if ($requiredChildrenIds) {
+                        $childrenIds = array();
+                        foreach ($requiredChildrenIds as $groupedChildrenIds) {
+                            $childrenIds = array_merge($childrenIds, $groupedChildrenIds);
+                        }
+                        
+                        $childrenProducts = self::getProducts($childrenIds, $store, false, $customerGroupId);
+
+                        if ($childrenProducts) {
+                            $minimalPrice = '';
+
+                            foreach ($childrenProducts as $childrenProductsKey => $childrenProduct) {
+                                if ($childrenProduct) {
+                                    $minimalPriceChildren = self::getProductMinimalPrice($childrenProduct, $store, false, $customerGroupId);
+
+                                    if (($minimalPriceChildren < $minimalPrice) || 
+                                        ($minimalPrice == '')) {
+                                        $minimalPrice = $minimalPriceChildren;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // end fixme
+            }
+        }
+
+        return $minimalPrice;
+    }
+
     public static function generateProductXML($product, $store = null)
     {
         $entry = '<entry>' . self::XML_END_LINE;
@@ -122,37 +250,22 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         $entry .= '<link href="' . $productUrl . '" />' . self::XML_END_LINE;
 
         // fixme in the future
-        // maybe exist simple solution get customerGroupPrices
+        // maybe exist better solution get customerGroupPrices
         $customerGroups = Mage::getModel('customer/group')->getCollection()->load();
         $defaultPrice = '';
 
         if ($customerGroups) {
-            if (($product->getData('type_id') == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) ||
-                ($product->getData('type_id') == Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE)) {
-                $productsCustomerGroup = self::getProduct($product->getId(), $store, true);
-                if ($productsCustomerGroup) {
-                    foreach ($productsCustomerGroup as $productCustomerGroup) {
-                        $defaultPrice = $productCustomerGroup->getData('min_price');
-                        break;
-                    }
-                }
-            }
-
             foreach ($customerGroups as $kCostomerGroup => $customerGroup) {
                 $price = '';
-                $minPrice = '';
 
-                if (($product->getData('type_id') == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) ||
-                    ($product->getData('type_id') == Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE)) {
-                    $price = $defaultPrice;
-                } else {
-                    $productsCustomerGroup = self::getProduct($product->getId(), $store, false, $customerGroup->getId());
-                    if ($productsCustomerGroup) {
-                        foreach ($productsCustomerGroup as $productCustomerGroup) {
-                            $price = $productCustomerGroup->getFinalPrice();
-                            break;
-                        }
+                $productsCustomerGroup = self::getProducts($product->getId(), $store, false, $customerGroup->getId());
+                if (($productsCustomerGroup) && (count($productsCustomerGroup) > 0)) {
+                    foreach ($productsCustomerGroup as $productCustomerGroup) {
+                        $price = self::getProductMinimalPrice($productCustomerGroup, $store, true, $customerGroup->getId());
+                        break;
                     }
+                } else {
+                    $price = self::getProductMinimalPrice($product, $store, true, $customerGroup->getId());
                 }
 
                 if ($price != '') {
@@ -161,7 +274,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
                 if ($customerGroup->getId() == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID) {
                     $entry .= '<cs:price>' . $price . '</cs:price>'. self::XML_END_LINE;
-                    $defaultPrice = $price;
+                    $defaultPrice = $price; // need in `<attributes>` with $inputType == 'price'
                 }
                 $label_ = Mage::helper('searchanise/ApiSe')->getLabelForPricesUsergroup() . $customerGroup->getId();
                 $entry .= '<cs:attribute name="' . $label_ . '" type="float">' . $price . '</cs:attribute>' . self::XML_END_LINE;
@@ -169,30 +282,11 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         }
 
         $entry .= '<cs:product_code><![CDATA[' . $product->getSku() . ']]></cs:product_code>' . self::XML_END_LINE;
+
         // <quantity>
         {
-            $quantity = 1;
-            $stockItem = self::getStockItem($product);
-            if ($stockItem) {
-                $manageStock = null;
-                if ($stockItem->getData('use_config_manage_stock')) {
-                    $manageStock = Mage::getStoreConfig(Mage_CatalogInventory_Model_Stock_Item::XML_PATH_MANAGE_STOCK);
-                } else {
-                    $manageStock = $stockItem->getData('manage_stock');
-                }
+            $quantity = self::getProductQty($product, $store, true);
 
-                if (!$manageStock) {
-                    $quantity = 1;
-                } else {
-                    $isInStock = $stockItem->getIsInStock();
-                    if (!empty($isInStock)) { 
-                        $quantity = $stockItem->getQty(); 
-                    } else { 
-                        $quantity = 0;
-                    }
-                }
-            }
-            
             $entry .= '<cs:quantity>' . ceil($quantity) . '</cs:quantity>' . self::XML_END_LINE;
             $entry .= '<cs:attribute name="is_in_stock" type="text">' . ($quantity > 0) . '</cs:attribute>' . self::XML_END_LINE;
             $quantity = round($quantity, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
@@ -425,90 +519,47 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         return $entry;
     }
 
-    private static function getProduct($productIds = null, $store = null, $flAddMinimalPrice = true, $customerGroupId = null)
+    private static function getProducts($productIds = null, $store = null, $flagAddMinimalPrice = false, $customerGroupId = null)
     {
+        Mage::app("default")->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
+
         $products = Mage::getModel('catalog/product')
             ->getCollection()
-            ->addAttributeToSelect('*');
-            
-        if (!empty($store)) {
-            $products
-                ->setStoreId($store)
-                ->addStoreFilter($store);
-        } else {
-            $products->setStoreId(Mage::app()->getStores());
-        }
-        
-        if (!empty($productIds)) {
-            if (is_array($productIds)) {
-                $products->addFieldToFilter('entity_id', array('in' => $productIds));
-            } else {
-                $products->addFieldToFilter('entity_id', array('eq' => $productIds));
-            }
-        }
+            ->addAttributeToSelect('*')
+            ->addUrlRewrite();
 
-        if ($flAddMinimalPrice == true) {
-            $products->addMinimalPrice($customerGroupId);
-        }
-
-        if ($customerGroupId) {
+        if ($customerGroupId != null) {
             if ($store) {
                 $products->addPriceData($customerGroupId, $store->getWebsiteId());
             } else {
                 $products->addPriceData($customerGroupId);
             }
         }
-
-        $products
-            ->addUrlRewrite()
-            ->load();
-        
-        return $products;
-    }
-
-    private static function getProducts($productIds = null, $store = null, $flAddMinimalPrice = false, $customerGroupId = null)
-    {
-        $products = Mage::getModel('catalog/product')
-            ->getCollection()
-            ->addAttributeToSelect('*');
             
         if (!empty($store)) {
             $products
                 ->setStoreId($store)
                 ->addStoreFilter($store);
         } else {
-            $products->setStoreId(Mage::app()->getStores());
+            // nothing
         }
         
         if (!empty($productIds)) {
-            if (is_array($productIds)) {
-                $products->addFieldToFilter('entity_id', array('in' => $productIds));
-            } else {
-                $products->addFieldToFilter('entity_id', array('eq' => $productIds));
-            }
+            // Already exist automatic definition 'one value' or 'array'.
+            $products->addIdFilter($productIds);
         }
 
-        if ($flAddMinimalPrice == true) {
+        if ($flagAddMinimalPrice == true) {
             $products->addMinimalPrice();
         }
 
-        if ($customerGroupId) {
-            if (!$store) {
-                $products->addPriceData($customerGroupId, $store->getWebsiteId());
-            } else {
-                $products->addPriceData($customerGroupId);
-            }
-        }
+        $products->load();
 
-        $products
-            ->addUrlRewrite()
-            ->load();
-        
         return $products;
     }
 
     // Main functions //
-    public static function generateProductsXML($productIds = null, $store = null, $flAddMinimalPrice = false)
+    public static function generateProductsXML($productIds = null, $store = null, $flagAddMinimalPrice = false)
     {
         if ($store) {
             // need for generate correct url
@@ -516,12 +567,13 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         }
         $ret = '';
 
-        $products = self::getProducts($productIds, $store, $flAddMinimalPrice);
+        $products = self::getProducts($productIds, $store, $flagAddMinimalPrice);
         $arrProduct = $products->toArray();
 
+        // fixme, need delete
         // additional check for products without minimal price
-        // deprecated, because use only $flAddMinimalPrice = false in current module
-        if ($flAddMinimalPrice === true) {
+        // deprecated, because use only $flagAddMinimalPrice = false in current module
+        if ($flagAddMinimalPrice === true) {
             if ((empty($arrProduct)) || (count($arrProduct) == 0)) {
                 return self::generateProductsXML($productIds, $store, false);
             }
@@ -545,6 +597,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 }
             }
         }
+        // end fixme
 
         if ((!empty($arrProduct)) && (count($arrProduct) != 0)) {
             foreach ($products as $product) {
@@ -609,29 +662,6 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
         $entry .= '</entry>' . self::XML_END_LINE;
 
-        return $entry;
-
-        // deprecated, because use "union"
-        $customerGroups = Mage::getModel('customer/group')->getCollection()->load();
-        if ($customerGroups) {
-            foreach ($customerGroups as $kCostomerGroup => $customerGroup) {
-                $entry .= '<entry>' . self::XML_END_LINE;
-                $entry .= '<title><![CDATA[Price (' . $customerGroup->getId() . ')]]></title>' . self::XML_END_LINE;
-                // not set
-                // $entry .= '<cs:position>' . 0 . '</cs:position>' . self::XML_END_LINE;
-                $label_ = Mage::helper('searchanise/ApiSe')->getLabelForPricesUsergroup() . $customerGroup->getId();
-                $entry .= '<cs:attribute>' . $label_ . '</cs:attribute>' . self::XML_END_LINE;
-                
-                $entry .= '<cs:type>dynamic</cs:type>' . self::XML_END_LINE;
-                
-                if (!empty($step)) {
-                    $entry .= '<cs:min_range>' . $step . '</cs:min_range>' . self::XML_END_LINE;
-                }
-
-                $entry .= '</entry>' . self::XML_END_LINE;
-            }
-        }
-        
         return $entry;
     }
     

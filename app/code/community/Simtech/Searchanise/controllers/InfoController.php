@@ -16,6 +16,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 {
     const RESYNC             = 'resync'; 
     const OUTPUT             = 'visual';
+    const STORE_ID           = 'store_id';
     const PRODUCT_IDS        = 'product_ids';
     const PARENT_PRIVATE_KEY = 'parent_private_key';
 
@@ -23,6 +24,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
     {
         $resync           = $this->getRequest()->getParam(self::RESYNC);
         $visual           = $this->getRequest()->getParam(self::OUTPUT);
+        $storeId          = $this->getRequest()->getParam(self::STORE_ID);
         $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
         $parentPrivateKey = $this->getRequest()->getParam(self::PARENT_PRIVATE_KEY);
 
@@ -46,7 +48,11 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 Mage::helper('searchanise/ApiSe')->queueImport();
 
             } elseif (!empty($productIds)) {
-                $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds);
+                $store = null;
+                if (!empty($storeId)) {
+                    $store = Mage::app()->getStore($storeId);
+                }
+                $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store);
 
                 if ($visual) {
                     Mage::helper('searchanise/ApiSe')->printR($productFeeds);

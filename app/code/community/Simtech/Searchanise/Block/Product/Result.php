@@ -19,7 +19,7 @@ class Simtech_Searchanise_Block_Product_Result extends Mage_Tag_Block_Product_Re
         if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
             return parent::_getProductCollection();
         }
-        
+
         if (is_null($this->_productCollection)) {
             $tagModel = Mage::getModel('tag/tag');
             $collection = $tagModel->getEntityCollection();
@@ -41,7 +41,7 @@ class Simtech_Searchanise_Block_Product_Result extends Mage_Tag_Block_Product_Re
                 ->addMinimalPrice()
                 ->addUrlRewrite()
                 ->setActiveFilter();
-            
+
             Mage::getSingleton('catalog/product_status')->addSaleableFilterToCollection($this->_productCollection);
             Mage::getSingleton('catalog/product_visibility')->addVisibleInSiteFilterToCollection($this->_productCollection);
         }

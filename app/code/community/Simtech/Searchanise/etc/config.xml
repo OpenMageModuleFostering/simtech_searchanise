@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>1.0.8</version>
+            <version>1.1.0</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -101,7 +101,7 @@
                     <children>
                         <Simtech_Searchanise>
                             <title>Searchanise Module</title>
-                            <sort_order>10</sort_order>
+                            <sort_order>1</sort_order>
                         </Simtech_Searchanise>
                         <system>
                             <children>
@@ -154,6 +154,13 @@
                     <layer_filter_price>Simtech_Searchanise_Model_Resource_Layer_Filter_Price</layer_filter_price>
                 </rewrite>
             </catalog_resource>
+            <!-- [v1.5] -->
+            <catalog_resource_eav_mysql4>
+                <rewrite>
+                    <product_action>Simtech_Searchanise_Model_Resource_Eav_Mysql4_Product_Action</product_action>
+                </rewrite>
+            </catalog_resource_eav_mysql4>
+            <!-- [/v1.5] -->
             <!-- END -->
             <!-- OVERRIDE CATALOGSEARCH MODEL -->
             <catalogsearch>
@@ -163,15 +170,26 @@
                 </rewrite>
             </catalogsearch>
             <!-- END -->
+
             <!-- <OVERRIDE CATALOGSEARCH RESOURCE> -->
+            <!-- [v1.6] [v1.7] -->
             <catalogsearch_resource>
                 <rewrite>
-                    <fulltext>Simtech_Searchanise_Model_Resource_Fulltext</fulltext>
                     <fulltext_collection>Simtech_Searchanise_Model_Resource_Fulltext_Collection</fulltext_collection>
                     <advanced_collection>Simtech_Searchanise_Model_Resource_Advanced_Collection</advanced_collection>
                 </rewrite>
             </catalogsearch_resource>
+            <!-- [/v1.6] [/v1.7] -->
+            <!-- [v1.5] -->
+            <catalogsearch_mysql4>
+                <rewrite>
+                    <fulltext_collection>Simtech_Searchanise_Model_Mysql4_Fulltext_Collection</fulltext_collection>
+                    <advanced_collection>Simtech_Searchanise_Model_Mysql4_Advanced_Collection</advanced_collection>
+                </rewrite>
+            </catalogsearch_mysql4>
+            <!-- [/v1.5] -->
             <!-- END -->
+
             <!-- OVERRIDE TAG MODEL -->
             <tag>
                 <rewrite>
@@ -179,13 +197,24 @@
                 </rewrite>
             </tag>
             <!-- END -->
-            <!-- OVERRIDE CATALOGSEARCH MODEL -->
+
+            <!-- OVERRIDE TAG RESOURCE -->
+            <!-- [v1.6] [v1.7] -->
             <tag_resource>
                 <rewrite>
                     <product_collection>Simtech_Searchanise_Model_Resource_Product_CollectionTag</product_collection>
                 </rewrite>
             </tag_resource>
+            <!-- [/v1.6] [/v1.7] -->
+            <!-- [v1.5]-->
+            <tag_mysql4>
+                <rewrite>
+                    <product_collection>Simtech_Searchanise_Model_Mysql4_Product_CollectionTag</product_collection>
+                </rewrite>
+            </tag_mysql4>
+            <!-- [/v1.5]-->
             <!-- END -->
+
             <!-- OVERRIDE IMPORTEXPORT MODEL -->
             <importexport>
                 <rewrite>
@@ -194,11 +223,20 @@
             </importexport>
             <!-- END -->
             <!-- <OVERRIDE CORE RESOURCE> -->
+            <!-- [v1.6] [v1.7] -->
             <core_resource>
                 <rewrite>
                     <store>Simtech_Searchanise_Model_Resource_Store</store>
                 </rewrite>
             </core_resource>
+            <!-- [/v1.6] [/v1.7] -->
+            <!-- [v1.5] -->
+            <core_mysql4>
+                <rewrite>
+                    <store>Simtech_Searchanise_Model_Mysql4_Store</store>
+                </rewrite>
+            </core_mysql4>
+            <!-- [/v1.5] -->
             <!-- END -->
             <!-- OVERRIDE ADMINHTML MODEL -->
             <adminhtml>
@@ -287,6 +325,7 @@
                         </rating>
                     </observers>
                 </catalog_product_delete_before>
+                <!-- [v1.6] [v1.7] -->
                 <catalog_product_attribute_update_before>
                     <observers>
                         <rating>
@@ -295,6 +334,17 @@
                         </rating>
                     </observers>
                 </catalog_product_attribute_update_before>
+                <!-- [/v1.6] [/v1.7] -->
+                <!-- [v1.5] -->
+                <searchanise_product_attribute_update_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogProductAttributeUpdateBefore</method>
+                        </rating>
+                    </observers>
+                </searchanise_product_attribute_update_before>
+                <!-- [/v1.5] -->
                 <catalog_product_website_update_before>
                     <observers>
                         <rating>
@@ -303,6 +353,14 @@
                         </rating>
                     </observers>
                 </catalog_product_website_update_before>
+                <catalog_category_tree_move_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogCategoryTreeMoveAfter</method>
+                        </rating>
+                    </observers>
+                </catalog_category_tree_move_after>
                 <!-- facets-->
                 <catalog_entity_attribute_save_before>
                     <observers>
@@ -477,7 +535,7 @@
     <default>
         <searchanise>
             <config>
-                <version>1.0.7</version>
+                <server_version>1.2</server_version>
                 <search_timeout>3</search_timeout>
                 <request_timeout>15</request_timeout>
                 <ajax_async_timeout>1</ajax_async_timeout>
@@ -489,6 +547,7 @@
                 <service_url>http://www.searchanise.com</service_url>
                 <cron_enabled>1</cron_enabled>
                 <input_id_search>search</input_id_search>
+                <!-- '2' - ajax -->
                 <type_async>2</type_async>
             </config>
         </searchanise>

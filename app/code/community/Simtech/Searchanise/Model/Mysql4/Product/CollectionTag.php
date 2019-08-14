@@ -12,13 +12,13 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
 
-// [v1.6] [v1.7]
-class Simtech_Searchanise_Model_Resource_Product_CollectionTag extends Mage_Tag_Model_Resource_Product_Collection
+// [v1.5]
+class Simtech_Searchanise_Model_Mysql4_Product_CollectionTag extends Mage_Tag_Model_Mysql4_Product_Collection
 {
     /**
-     * Searchanise Collection Product 
+     * Product Collection
      *
-     * @var Simtech_Searchanise_Model_Searchanise
+     * @var Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7], Mage_Catalog_Model_Mysql4_Collection [v1.5]
      */
     protected $_searchaniseCollection = null;
 
@@ -63,7 +63,7 @@ class Simtech_Searchanise_Model_Resource_Product_CollectionTag extends Mage_Tag_
      *
      * @param string $attribute
      * @param string $dir
-     * @return Mage_CatalogSearch_Model_Mysql4_Fulltext_Collection
+     * @return Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7], Mage_Catalog_Model_Mysql4_Collection [v1.5]
      */
     public function setOrder($attribute, $dir = 'desc')
     {
@@ -75,7 +75,7 @@ class Simtech_Searchanise_Model_Resource_Product_CollectionTag extends Mage_Tag_
      *
      * @param string $attribute
      * @param string $dir
-     * @return Mage_CatalogSearch_Model_Mysql4_Fulltext_Collection
+     * @return Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7], Mage_Catalog_Model_Mysql4_Collection [v1.5]
      */
     public function setOrderParent($attribute, $dir = 'desc')
     {

@@ -237,7 +237,40 @@ class Simtech_Searchanise_Model_Observer
         
         return $this;
     }
-    
+
+    /**
+     * Move category after
+     *
+     * @param   Varien_Event_Observer $observer
+     * @return  Mage_CatalogIndex_Model_Observer
+     */
+    public function catalogCategoryTreeMoveAfter(Varien_Event_Observer $observer)
+    {
+        $category = $observer->getEvent()->getCategory();
+        
+        if ($category && $category->getId()) {
+            $products = $category->getProductCollection();
+
+            if (!empty($products)) {
+                if (empty(self::$productIdsInCategory)) {
+                    Mage::getModel('searchanise/queue')->addActionProducts($products);
+                } else {
+                    $productIds = array();
+                    foreach ($products as $product) {
+                        $id = $product->getId();
+                        if ((!empty($id)) && (!in_array($id, self::$productIdsInCategory))) {
+                            $productIds[] = $id;
+                        }
+                    }
+
+                    Mage::getModel('searchanise/queue')->addActionProductIds($productIds);
+                }
+            }
+        }
+        
+        return $this;
+    }
+
     // FOR SALES //
     /**
      * 

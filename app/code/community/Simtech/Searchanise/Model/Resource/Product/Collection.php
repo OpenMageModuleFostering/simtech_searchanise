@@ -12,42 +12,74 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
 
+// [v1.6] [v1.7]
 class Simtech_Searchanise_Model_Resource_Product_Collection extends Mage_Catalog_Model_Resource_Product_Collection
 {
     /**
-     * Searchanise request
+     * Searchanise Collection Product 
      *
-     * @var Simtech_Searchanise_Model_Request
+     * @var Simtech_Searchanise_Model_Searchanise
      */
-    protected $_searchaniseRequest = null;
-    
+    protected $_searchaniseCollection = null;
+
+    /**
+     * Initialize resource
+     * @return Simtech_Searchanise_Model_Mysql4_Product_CollectionSearhanise
+     */
+    protected function _construct()
+    {
+        parent::_construct();
+        $this->_searchaniseCollection = Mage::getModel('searchanise/searchanise');
+        $this->_searchaniseCollection->setCollection($this);
+    }
+
     public function initSearchaniseRequest()
     {
-        $this->_searchaniseRequest = Mage::getModel('searchanise/request');
-        
-        return $this;
+        return $this->_searchaniseCollection->initSearchaniseRequest();
     }
     
     public function checkSearchaniseResult()
     {
-        return Mage::helper('searchanise/ApiSe')->checkSearchaniseResult($this->_searchaniseRequest);
+        return $this->_searchaniseCollection->checkSearchaniseResult();
     }
     
     public function setSearchaniseRequest($request)
     {
-        $this->_searchaniseRequest = $request;
+        return $this->_searchaniseCollection->setSearchaniseRequest($request);
     }
     
     public function getSearchaniseRequest()
     {
-        return $this->_searchaniseRequest;
+        return $this->_searchaniseCollection->getSearchaniseRequest();
     }
     
     public function addSearchaniseFilter()
     {
-        $this->addFieldToFilter('entity_id', array('in' => $this->getSearchaniseRequest()->getProductIds()));
-        
-        return $this;
+        return $this->_searchaniseCollection->addSearchaniseFilter();
+    }
+    
+    /**
+     * Set Order field
+     *
+     * @param string $attribute
+     * @param string $dir
+     * @return Mage_CatalogSearch_Model_Mysql4_Fulltext_Collection
+     */
+    public function setOrder($attribute, $dir = 'desc')
+    {
+        return $this->_searchaniseCollection->setOrder($attribute, $dir);
+    }
+
+    /**
+     * Set Order field
+     *
+     * @param string $attribute
+     * @param string $dir
+     * @return Mage_CatalogSearch_Model_Mysql4_Fulltext_Collection
+     */
+    public function setOrderParent($attribute, $dir = 'desc')
+    {
+        return parent::setOrder($attribute, $dir);
     }
 
     /**
@@ -57,50 +89,16 @@ class Simtech_Searchanise_Model_Resource_Product_Collection extends Mage_Catalog
      */
     public function getLastPageNumber()
     {
-        if (!$this->checkSearchaniseResult()) {
-            return parent::getLastPageNumber();
-        }
-        
-        $collectionSize = (int) $this
-            ->getSearchaniseRequest()
-            ->getTotalProduct();
-        
-        if (0 === $collectionSize) {
-            return 1;
-        } elseif ($this->_pageSize) {
-            return ceil($collectionSize/$this->_pageSize);
-        }
-        
-        return 1;
+        return $this->_searchaniseCollection->getLastPageNumber();
     }
 
     /**
-     * Set Order field
+     * Retrieve collection last page number
      *
-     * @param string $attribute
-     * @param string $dir
-     * @return Mage_CatalogSearch_Model_Resource_Fulltext_Collection
+     * @return int
      */
-    public function setOrder($attribute, $dir = 'desc')
+    public function getLastPageNumberParent()
     {
-        if (!$this->checkSearchaniseResult()) {
-            return parent::setOrder($attribute, $dir);
-        }
-        
-        if ($attribute == 'relevance') {
-            $product_ids = $this
-                ->getSearchaniseRequest()
-                ->getProductIdsString();
-            
-            if (!empty($product_ids)) {
-                $sortBy = "FIELD(e.entity_id, {$product_ids}) {$dir}";
-                $this->getSelect()->order(new Zend_Db_Expr($sortBy));
-            }
-            
-        } else {
-            parent::setOrder($attribute, $dir);
-        }
-        
-        return $this;
+        return parent::getLastPageNumber();
     }
 }

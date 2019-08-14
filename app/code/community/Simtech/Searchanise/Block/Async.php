@@ -41,7 +41,6 @@ class Simtech_Searchanise_Block_Async extends Mage_Core_Block_Text
 
             if (Mage::helper('searchanise/ApiSe')->checkAjaxAsync()) {
                 $asyncUrl = Mage::helper('searchanise/ApiSe')->getAsyncUrl(false);
-
                 $html .= "\n<object data=\"$asyncUrl\" width=\"0\" height=\"0\"></object>\n";
 
                 // code for ajax async

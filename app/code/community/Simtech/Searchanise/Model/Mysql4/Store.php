@@ -12,8 +12,8 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
 
-// [1.6] [1.7]
-class Simtech_Searchanise_Model_Resource_Store extends Mage_Core_Model_Resource_Store
+// [v1.5]
+class Simtech_Searchanise_Model_Mysql4_Store extends Mage_Core_Model_Mysql4_Store
 {
     /**
      * Check store code before save

@@ -16,7 +16,6 @@ class Simtech_Searchanise_Helper_ApiSe
     const COMPRESS_RATE = 5;
 
     const PLATFORM_NAME    = 'magento';
-    const PLATFORM_VERSION = '1.2';
 
     const CONFIG_PREFIX = 'se_';
 
@@ -377,7 +376,7 @@ class Simtech_Searchanise_Helper_ApiSe
             $symbol = str_replace('%s', '', $format['pattern']);
         }
         
-        $ret = array (
+        $ret = array(
             'rate'                => $store->getCurrentCurrencyRate(),
             'decimals'            => $format['precision'],
             'decimals_separator'  => $format['decimalSymbol'],
@@ -405,7 +404,7 @@ class Simtech_Searchanise_Helper_ApiSe
 
         $date = Mage::app()->getLocale()->date($timestamp, null, null);
         
-        return Varien_Date::formatDate($date, $format, $showTime);
+        return Mage::helper('core')->formatDate($date, $format, $showTime);
     }
     
     public static function getAddonOptions($store = null)
@@ -421,15 +420,15 @@ class Simtech_Searchanise_Helper_ApiSe
         
         $ret['addon_status'] = self::getStatusModule() == 'Y' ? 'enabled' : 'disabled';
 
-        $ret['addon_version'] = self::getVersion();
+        $ret['addon_version'] = (string) Mage::getConfig()->getModuleConfig("Simtech_Searchanise")->version;
         $ret['core_version'] = Mage::getVersion();
         
         return $ret;
     }
     
-    public static function getVersion()
+    public static function getServerVersion()
     {
-        return self::getSetting('version');
+        return self::getSetting('server_version');
     }
     
     public static function getSearchTimeout()
@@ -508,7 +507,7 @@ class Simtech_Searchanise_Helper_ApiSe
         
         if (!empty($curStores)) {
             if (!is_array($curStores)) {
-                $stores = array (
+                $stores = array(
                     0 => $curStores,
                 );
             } else {
@@ -650,7 +649,7 @@ class Simtech_Searchanise_Helper_ApiSe
         $priceTo = '';
 
         if (is_array($dataPrice)) {
-            // example Array ( [from] => 0 [to] => 33 )
+            // example array( [from] => 0 [to] => 33 )
             if (!empty($dataPrice)) {
                 if ($dataPrice['from'] != '') {
                     $priceFrom = trim($dataPrice['from']);
@@ -661,7 +660,7 @@ class Simtech_Searchanise_Helper_ApiSe
             }
         } elseif ($dataPrice != '') {
             if (strpos($dataPrice, '-') === false) {
-                // for 1.6.X versions
+                // [v1.5] [v1.6]
                 $arrPrice = explode(',', $dataPrice);
 
                 if (is_array($arrPrice) && (count($arrPrice) >= 2)) {
@@ -669,13 +668,13 @@ class Simtech_Searchanise_Helper_ApiSe
                     next($arrPrice);
                     $step = (int) current($arrPrice);
 
-                    if ($number_range > 1) {
+                    if ($numberRange > 1) {
                         $priceFrom = ($numberRange - 1) * $step;
                     }
                     $priceTo = $numberRange * $step;
                 }                
             } else {
-                // For version 1.7.X versions
+                // [v1.7]
                 $arrPrice = explode('-', $dataPrice);
                 if (is_array($arrPrice) && (count($arrPrice) >= 2)) {
                     $priceFrom = (int) reset($arrPrice);
@@ -1001,7 +1000,7 @@ class Simtech_Searchanise_Helper_ApiSe
                     array(
                         'url'                => $url,
                         'email'              => $email,
-                        'version'            => self::PLATFORM_VERSION,
+                        'version'            => self::getServerVersion(),
                         'platform'           => self::PLATFORM_NAME,
                         'parent_private_key' => $parentPrivateKey,        
                     ),
@@ -1285,7 +1284,7 @@ class Simtech_Searchanise_Helper_ApiSe
                     $_product_ids = array_chunk($_product_ids, self::getProductsPerPass());
                     
                     foreach ($_product_ids as $product_ids) {
-                        $sqls_arr[] = array (
+                        $sqls_arr[] = array(
                             'data'     => serialize($product_ids),
                             'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE,
                             'store_id' => $store->getId(),

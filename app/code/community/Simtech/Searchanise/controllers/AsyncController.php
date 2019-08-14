@@ -36,11 +36,16 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
     */
     public function preDispatch()
     {
-        $this->setFlag('', self::FLAG_NO_START_SESSION, 1);
+        Mage::app()->setCurrentStore('admin');
+
+        // Do not start standart session
+        $this->setFlag('', self::FLAG_NO_START_SESSION, 1); 
         $this->setFlag('', self::FLAG_NO_CHECK_INSTALLATION, 1);
         $this->setFlag('', self::FLAG_NO_COOKIES_REDIRECT, 0);
         $this->setFlag('', self::FLAG_NO_PRE_DISPATCH, 1);
-        $this->setFlag('', self::FLAG_NO_POST_DISPATCH, 1);
+
+        // Need for delete the "PDOExceptionPDOException" error
+        $this->setFlag('', self::FLAG_NO_POST_DISPATCH, 1); 
 
         parent::preDispatch();
     }
@@ -82,7 +87,7 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
                         array(),
                         array(),
                         Mage::helper('searchanise/ApiSe')->getAjaxAsyncTimeout(),
-                        2
+                        2 // maxredirects
                     );
                 }
             }

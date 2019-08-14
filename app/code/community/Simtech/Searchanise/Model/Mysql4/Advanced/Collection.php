@@ -12,8 +12,8 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
 
-// [v1.6] [v1.7]
-class Simtech_Searchanise_Model_Resource_Product_CollectionTag extends Mage_Tag_Model_Resource_Product_Collection
+// [v1.5]
+class Simtech_Searchanise_Model_Mysql4_Advanced_Collection extends Mage_CatalogSearch_Model_Mysql4_Advanced_Collection
 {
     /**
      * Searchanise Collection Product 
