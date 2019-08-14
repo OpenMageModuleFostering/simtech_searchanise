@@ -99,7 +99,11 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
                     if ($checkKey && $this->getRequest()->getParam('ignore_processing') === 'Y') {
                         $flIgnoreProcessing = true;
                     }
-                    
+
+                    if (Mage::helper('catalog/product_flat')->isEnabled()) {
+                        Mage::helper('searchanise/ApiProducts')->setIsGetProductsByItems(true);
+                    }
+
                     $result = Mage::helper('searchanise/ApiSe')->async($flIgnoreProcessing);
 
                     if ($this->checkShowSatusAsync()) {

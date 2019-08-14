@@ -638,11 +638,22 @@ class Simtech_Searchanise_Helper_ApiSe
     {
         if (self::checkImportIsDone()) {
             if (self::checkNotificationAsyncComleted()) {
+                Mage::helper('searchanise/ApiSe')->showWarningFlatTables();
+
                 $textNotification = Mage::helper('searchanise')->__('Catalog indexation is complete. Configure Searchanise via the <a href="%s">Admin Panel</a>.', Mage::helper('searchanise/ApiSe')->getModuleUrl());
 
                 Mage::helper('searchanise/ApiSe')->setNotification('N', Mage::helper('searchanise')->__('Searchanise'), $textNotification);
                 self::setNotificationAsyncComleted(true);
             }
+        }
+
+        return true;
+    }
+
+    public static function showWarningFlatTables()
+    {
+        if (Mage::helper('catalog/product_flat')->isEnabled() && count(self::getStores()) > 1) {
+            Mage::helper('searchanise/ApiSe')->setNotification('W', Mage::helper('searchanise')->__('Searchanise'), Mage::helper('searchanise')->__("Please disable the Use Flat Catalog Product (Configuration -> Catalog -> Frontend) setting if you have multiple store views. Otherwise, Searchanise may work incorrectly."));
         }
 
         return true;
@@ -1080,8 +1091,6 @@ class Simtech_Searchanise_Helper_ApiSe
                             self::sendAddonStatusRequest('disabled', $store);
                         }
                     }
-                    $connected = true;
-
                     continue;
                 }
                 
@@ -1107,7 +1116,7 @@ class Simtech_Searchanise_Helper_ApiSe
                         'email'              => $email,
                         'version'            => self::getServerVersion(),
                         'platform'           => self::PLATFORM_NAME,
-                        'parent_private_key' => $parentPrivateKey,        
+                        'parent_private_key' => $parentPrivateKey,
                     ),
                     array(),
                     array(),
@@ -1153,7 +1162,7 @@ class Simtech_Searchanise_Helper_ApiSe
             self::setNotification('N', Mage::helper('searchanise')->__('Notice'), Mage::helper('searchanise')->__("Congratulations, you've just connected to Searchanise"));
         }
 
-        return $connected;
+        return true;
     }
 
     public static function getFilterableFiltersIds($store = null)

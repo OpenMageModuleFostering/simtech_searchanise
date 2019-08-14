@@ -410,13 +410,13 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 
     private static function _getTextAttributeValues($product, $attributeCode, $inputType, $store = null)
     {
-        static $arrTextValues = array();
+        //static $arrTextValues = array();
         $key = $attributeCode;
         if ($store) {
             $key .= '__' . $store->getId();
         }
 
-        if (!isset($arrTextValues[$key])) {
+        if (!isset($arrTextValues[$key]) && !is_null($product->getData($attributeCode))) {
             $values = array();
             // Dependency of store already exists
             $textValues = $product->getResource()->getAttribute($attributeCode)->getFrontend()->getValue($product);

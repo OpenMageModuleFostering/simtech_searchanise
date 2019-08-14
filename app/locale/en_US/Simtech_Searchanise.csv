@@ -14,6 +14,7 @@
 "Congratulations, you've just connected to Searchanise", "Congratulations, you've just connected to Searchanise"
 "You've connected to Searchanise", "You've connected to Searchanise"
 "text_se_database_restore_notice", "You've just restored your data from the database dump file. If this dump contains products data, please <a href="[link]">Resync</a> them with Searchanise."
+"Please disable the Use Flat Catalog Product (Configuration -> Catalog -> Frontend) setting if you have multiple store views. Otherwise, Searchanise may work incorrectly.", "Please disable the Use Flat Catalog Product (Configuration -> Catalog -> Frontend) setting if you have multiple store views. Otherwise, Searchanise may work incorrectly."
 "Relevance", "Relevance"
 "Products", "Products"
 "Popular suggestions", "Popular suggestions"
