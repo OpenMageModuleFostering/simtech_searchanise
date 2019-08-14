@@ -17,16 +17,45 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
     const RESYNC             = 'resync'; 
     const OUTPUT             = 'visual';
     const STORE_ID           = 'store_id';
+    const PRODUCT_ID         = 'product_id';
     const PRODUCT_IDS        = 'product_ids';
     const PARENT_PRIVATE_KEY = 'parent_private_key';
+
+    /**
+     * Dispatch event before action
+     *
+     * @return void
+    */
+    public function preDispatch()
+    {
+        // It is need if it will used the "generateProductsXML" function
+
+        // Do not start standart session
+        $this->setFlag('', self::FLAG_NO_START_SESSION, 1); 
+        $this->setFlag('', self::FLAG_NO_CHECK_INSTALLATION, 1);
+        $this->setFlag('', self::FLAG_NO_COOKIES_REDIRECT, 0);
+        $this->setFlag('', self::FLAG_NO_PRE_DISPATCH, 1);
+
+        // Need for delete the "PDOExceptionPDOException" error
+        $this->setFlag('', self::FLAG_NO_POST_DISPATCH, 1); 
+
+        parent::preDispatch();
+
+        return $this;
+    }
 
     public function indexAction()
     {
         $resync           = $this->getRequest()->getParam(self::RESYNC);
         $visual           = $this->getRequest()->getParam(self::OUTPUT);
         $storeId          = $this->getRequest()->getParam(self::STORE_ID);
+        $productId        = $this->getRequest()->getParam(self::PRODUCT_ID);
         $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
         $parentPrivateKey = $this->getRequest()->getParam(self::PARENT_PRIVATE_KEY);
+
+        if ($productId) {
+            $productIds = array($productId);
+        }
 
         if ((empty($parentPrivateKey)) || 
             (Mage::helper('searchanise/ApiSe')->getParentPrivateKey() !== $parentPrivateKey)) {
@@ -67,7 +96,9 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 $options['next_queue'] = Mage::getModel('searchanise/queue')->getNextQueue();
                 $options['total_items_in_queue'] = Mage::getModel('searchanise/queue')->getTotalItems();
                 
-                $options['type_async'] = Mage::helper('searchanise/ApiSe')->getTypeAsync();
+                $options['cron_async_enabled'] = Mage::helper('searchanise/ApiSe')->checkCronAsync();
+                $options['ajax_async_enabled'] = Mage::helper('searchanise/ApiSe')->checkAjaxAsync();
+                $options['object_async_enabled'] = Mage::helper('searchanise/ApiSe')->checkObjectAsync();
 
                 $options['max_execution_time'] = ini_get('max_execution_time');
                 @set_time_limit(0);

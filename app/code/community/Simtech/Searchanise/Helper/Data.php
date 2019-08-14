@@ -41,6 +41,8 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
      * @var Simtech_Searchanise_Model_Request
      */
     protected $_searchaniseRequest = null;
+
+    protected $_searchaniseCurentType = null;
     
     public function initSearchaniseRequest()
     {
@@ -48,7 +50,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         
         return $this;
     }
-    
+
     public function checkSearchaniseResult()
     {
         return Mage::helper('searchanise/ApiSe')->checkSearchaniseResult($this->_searchaniseRequest);
@@ -62,6 +64,16 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
     public function getSearchaniseRequest()
     {
         return $this->_searchaniseRequest;
+    }
+
+    public function setSearchaniseCurentType($type = null)
+    {
+        $this->_searchaniseCurentType = $type;
+    }
+
+    public function getSearchaniseCurentType()
+    {
+        return $this->_searchaniseCurentType;
     }
     
     public function getDisableText()
@@ -139,9 +151,34 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         
         return Mage::getUrl('*/*/*', array('_current'=>true, '_use_rewrite'=>true, '_query'=>$query));
     }
+
+    /**
+     * Check for replace default functional (example getAvailableLimit in Simtech_Searchanise_Block_Product_List_Toolbar)
+     *
+     * @return boolean
+     */
+    public function checkSearchaniseIsRunning()
+    {
+        $check = false;
+
+        $type = $this->getSearchaniseCurentType();
+        
+        if ($type) {
+            if (Mage::helper('searchanise/ApiSe')->getUseNavigation()) {
+                $check = true;
+            } else {
+                if (($type == self::TEXT_FIND) || ($type == self::TEXT_ADVANCED_FIND)) {
+                    $check = true;
+                }
+            }
+        }
+
+        return $check;
+    }
     
     public function execute($type = null, $controller = null, $blockToolbar = null, $data = null)
     {
+        $this->setSearchaniseCurentType(); // init value
         if ((!$this->checkEnabled()) || (!Mage::helper('searchanise/ApiSe')->getEnabledSearchaniseSearch())) {
             return;
         }
@@ -151,6 +188,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                 return;
             }
         }
+        $this->setSearchaniseCurentType($type);
         if (empty($params)) {
             $params = array();
         }

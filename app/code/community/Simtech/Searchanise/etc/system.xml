@@ -46,9 +46,12 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </input_id_search>
-                        <type_async translate="label comment">
+                        <!-- Hided the "Sync Init Method" option -->
+                        <!-- 
+                            <type_async translate="label comment">
                             <label><![CDATA[Sync Init Method]]></label>
-                            <comment><![CDATA[<strong>Cron</strong>. If cron service is set up and running, it is recommended to use this option. Database synchronization will be initialized according to the cron schedule.<br>
+                            <comment><![CDATA[
+                                <strong>Cron</strong>. If cron service is set up and running, it is recommended to use this option. Database synchronization will be initialized according to the cron schedule.<br>
                                 <strong>AJAX</strong>. Select this option if you want the database synchronization to be initialized everytime a page is visited in the customer area.
                             ]]></comment>
                             <frontend_type>select</frontend_type>
@@ -57,7 +60,8 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
-                        </type_async>
+                        </type_async> 
+                        -->
                         <enabled_searchanise_search translate="labe comment">
                             <label><![CDATA[Use Searchanise for search and advanced search]]></label>
                             <comment><![CDATA[Disable in case of invalid search operation.<br>The instant search widget will <strong>remain active</strong>.]]></comment>

@@ -31,8 +31,8 @@ class Simtech_Searchanise_Model_Observer
         Mage::helper('searchanise/ApiSe')->log('start cron autoSync', 'information');
         
         // only run if set to
-        $cron_enabled = Mage::helper('searchanise/ApiSe')->getCronEnabled();
-        if ($cron_enabled) {
+        $cronAsyncEnabled = Mage::helper('searchanise/ApiSe')->checkCronAsync();
+        if ($cronAsyncEnabled) {
             Mage::helper('searchanise/ApiSe')->log('cron is enabled', 'information');
             $result = Mage::helper('searchanise/ApiSe')->async();
             echo $result;

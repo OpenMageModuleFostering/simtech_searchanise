@@ -46,6 +46,8 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
         $this->setFlag('', self::FLAG_NO_POST_DISPATCH, 1); 
 
         parent::preDispatch();
+
+        return $this;
     }
 
     /*
@@ -54,14 +56,15 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
     public function indexAction()
     {
         if (Mage::helper('searchanise/ApiSe')->getStatusModule() == 'Y') {
-            Mage::app('admin')->setUseSessionInUrl(false);
-            Mage::app('customer')->setUseSessionInUrl(false);
-
-            if (Mage::helper('searchanise/ApiSe')->checkStartAsync()) {
-                $check = $this->checkNotUseHttpRequest();
-                // code if need not use httprequest
-                // not need in current version
-                // $check = true;
+            // not need because it checked in the "Async.php" block
+            // if (Mage::helper('searchanise/ApiSe')->checkStartAsync()) {
+            if (true) {
+                $check = true;
+                // code if need use httprequest
+                // $check = $this->checkNotUseHttpRequest();
+                // Mage::app('admin')->setUseSessionInUrl(false);
+                // Mage::app('customer')->setUseSessionInUrl(false); // need check: sometimes not work properly (the async script will not start)
+                // end code
 
                 if ($check) {
                     @ignore_user_abort(true);

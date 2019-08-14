@@ -1,7 +1,7 @@
 {
     "name": "OpenMageModuleFostering/Simtech_Searchanise",
     "type": "magento-module",
-    "license": "Commercial-license:-https://searchanise.atlassian.net/wiki/display/DD/LICENSE+AGREEMENT",
+    "license": "Commercial-license:-http://docs.searchanise.com/connector_addon/license_agreement.html",
     "homepage": "",
     "description": "Searchanise Connector Add-on allows you to easily integrate Searchanise rapid search service in your online store. The add-on provides both an admin panel and a customer area widgets.",
     "authors": [

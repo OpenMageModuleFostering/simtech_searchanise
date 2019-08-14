@@ -83,9 +83,19 @@ class Simtech_Searchanise_Helper_ApiSe
         return true;
     }
 
-    public static function getCronEnabled()
+    public static function checkCronAsync()
     {
-        return self::getSetting('cron_enabled');
+        return self::getSetting('cron_async_enabled');
+    }
+
+    public static function checkAjaxAsync()
+    {
+        return self::getSetting('ajax_async_enabled');
+    }
+
+    public static function checkObjectAsync()
+    {
+        return self::getSetting('object_async_enabled');
     }
     
     public static function getInputIdSearch()
@@ -93,19 +103,9 @@ class Simtech_Searchanise_Helper_ApiSe
         return self::getSetting('input_id_search');
     }
 
-    public static function getTypeAsync()
-    {
-        return self::getSetting('type_async');
-    }
-
     public static function getEnabledSearchaniseSearch()
     {
         return self::getSetting('enabled_searchanise_search');
-    }
-
-    public static function checkAjaxAsync()
-    {
-        return self::getTypeAsync() == 2;
     }
 
     public static function getLabelForPricesUsergroup() {
@@ -1787,11 +1787,11 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function changeAmpersand($str = '')
     {
         if (!empty($str)) {
-            if (strpos('&amp;', $str) !== false) {
+            if (strpos($str, '&amp;') !== false) {
                 return $str;
             }
 
-            if (strpos('&', $str) !== false) {
+            if (strpos($str, '&') !== false) {
                 return str_replace('&','&amp;',$str); 
             }
         }

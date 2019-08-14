@@ -436,9 +436,8 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
             return $ret;
         }
 
-        $name = $attribute->getName();
-        // hook, need for 'union'
-        if ($name == 'price') {
+        // hook, it is need for 'union' and this attribute defined in the 'price' field
+        if ($attribute->getAttributeCode() == 'price') {
             $label = 'price';    
         } else {
             $label = 'attribute_' . $attribute->getId();    
@@ -489,8 +488,13 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
         if (!$attribute) {
             return $ret;
         }
-
-        $label = 'attribute_' . $attribute->getId();
+        
+        // hook, it is need for 'union' and this attribute defined in the 'price' field
+        if ($attribute->getAttributeCode() == 'price') {
+            $label = 'price';
+        } else {
+            $label = 'attribute_' . $attribute->getId();
+        }
         $vals = array();
         $res = $this->getSearchResult();
 
@@ -525,26 +529,20 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
         
         $label = 'category' . $category->getId();
         
-        if (!$this->checkAttributesCountLabel($label))
-        {
+        if (!$this->checkAttributesCountLabel($label)) {
             $val = 0;
             $res = $this->getSearchResult();
             
-            if (!empty($res['facets']))
-            {
+            if (!empty($res['facets'])) {
                 // fixme in the future
                 // error calc count product in category
                 $arr_cat = null;
                 Mage::helper('searchanise/ApiSe')->getAllChildrenCategories($arr_cat, $category);
                 
-                foreach ($res['facets'] as $facet)
-                {
-                    if ($facet['attribute'] == 'categories')
-                    {
-                        if (!empty($facet['buckets']))
-                        {
-                            foreach ($facet['buckets'] as $bucket)
-                            {
+                foreach ($res['facets'] as $facet) {
+                    if ($facet['attribute'] == 'categories') {
+                        if (!empty($facet['buckets'])) {
+                            foreach ($facet['buckets'] as $bucket) {
                                 if (in_array($bucket['value'], $arr_cat)) {
                                     $val += $bucket['count'];
                                 }

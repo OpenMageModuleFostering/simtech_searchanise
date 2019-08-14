@@ -80,12 +80,17 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 $smallImage = $product->getData('small_image');
 
                 if (!empty($smallImage) && $smallImage != 'no_selection') {
-                    $imageLink = Mage::helper('catalog/image')
-                        ->init($product, 'small_image')
-                        ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
-                        ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
-                        ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
-                        ->resize($width, $height);
+                    try {
+                        $imageLink = Mage::helper('catalog/image')
+                            ->init($product, 'small_image')
+                            ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
+                            ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
+                            ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
+                            ->resize($width, $height);
+                    } catch (Exception $e) {
+                        // image not exists
+                        $imageLink = '';
+                    }
                 }
             }
 
@@ -93,12 +98,17 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 $image = $product->getData('image');
 
                 if (!empty($image) && $image != 'no_selection') {
-                    $imageLink = Mage::helper('catalog/image')
-                        ->init($product, 'image')
-                        ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
-                        ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
-                        ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
-                        ->resize($width, $height);
+                    try {
+                        $imageLink = Mage::helper('catalog/image')
+                            ->init($product, 'image')
+                            ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
+                            ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
+                            ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
+                            ->resize($width, $height);
+                    } catch (Exception $e) {
+                        // image not exists
+                        $imageLink = '';
+                    }
                 }
             }
 
@@ -106,12 +116,17 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 $thumbnail = $product->getData('thumbnail');
                 
                 if (!empty($thumbnail) && $thumbnail != 'no_selection') {
-                    $imageLink = Mage::helper('catalog/image')
-                        ->init($product, 'thumbnail')
-                        ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
-                        ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
-                        ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
-                        ->resize($width, $height);
+                    try {
+                        $imageLink = Mage::helper('catalog/image')
+                            ->init($product, 'thumbnail')
+                            ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
+                            ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
+                            ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
+                            ->resize($width, $height);
+                    } catch (Exception $e) {
+                        // image not exists
+                        $imageLink = '';
+                    }
                 }
             }
         }
@@ -154,22 +169,25 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                         // if CONFIGURABLE OR GROUPED OR BUNDLE
                         if (($product->getData('type_id') == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) ||
                             ($product->isSuper())) {
-                            $quantity = 1;
 
                             // fixme in the future
                             // maybe exist simple solution get `quantity` for TYPE_BUNDLE or TYPE_CONFIGURABLE product
                             if ($typeInstance = $product->getTypeInstance()) {
                                 $requiredChildrenIds = $typeInstance->getChildrenIds($product->getId(), true);
                                 if ($requiredChildrenIds) {
-                                    $quantity = 0;
                                     $childrenIds = array();
+                                    $childrenProducts = null;
+
                                     foreach ($requiredChildrenIds as $groupedChildrenIds) {
                                         $childrenIds = array_merge($childrenIds, $groupedChildrenIds);
                                     }
-                                    
-                                    $childrenProducts = self::getProducts($childrenIds, $store);
+
+                                    if ($childrenIds) {
+                                        $childrenProducts = self::getProducts($childrenIds, $store);
+                                    }
 
                                     if ($childrenProducts) {
+                                        $quantity = 0;
                                         foreach ($childrenProducts as $childrenProductsKey => $childrenProduct) {
                                             if ($childrenProduct) {
                                                 $quantity += self::getProductQty($childrenProduct, $store, false);
@@ -189,7 +207,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     }
 
     /**
-     * getProductMinimalPrice
+     * Get product minimal price without "Tier Price" (quantity discount)
      *
      * @param Mage_Catalog_Model_Product $product
      * @param Mage_Core_Model_Store $store
@@ -198,11 +216,18 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
      */
     private static function getProductMinimalPrice($product, $store, $flagWithChildrenProducts = true, $customerGroupId = null)
     {
-        $minimalPrice = $product->getMinimalPrice();
+        $minimalPrice = '';
+        // The "getMinimalPrice" function gets price with "Tier Price" (quantity discount)
+        // $minimalPrice = $product->getMinimalPrice();
 
         if ($minimalPrice == '') {
             $minimalPrice = $product->getFinalPrice();
         }
+
+        $taxHelper = Mage::helper('tax');
+
+        $showPricesTax = ($taxHelper->displayPriceIncludingTax() || $taxHelper->displayBothPrices());
+        $minimalPrice = $taxHelper->getPrice($product, $product->getFinalPrice(), $showPricesTax);
 
         if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
             $_priceModel  = $product->getPriceModel();
@@ -226,11 +251,15 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                     $requiredChildrenIds = $typeInstance->getChildrenIds($product->getId(), true);
                     if ($requiredChildrenIds) {
                         $childrenIds = array();
+                        $childrenProducts = null;
+
                         foreach ($requiredChildrenIds as $groupedChildrenIds) {
                             $childrenIds = array_merge($childrenIds, $groupedChildrenIds);
                         }
-                        
-                        $childrenProducts = self::getProducts($childrenIds, $store, false, $customerGroupId);
+
+                        if ($childrenIds) {
+                            $childrenProducts = self::getProducts($childrenIds, $store, false, $customerGroupId);
+                        }
 
                         if ($childrenProducts) {
                             $minimalPrice = '';
@@ -375,7 +404,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
                     } elseif ($attributeCode == 'price') {
                         // nothing
-                        // defined in the '<cs:price>' field
+                        // already defined in the '<cs:price>' field
 
                     } elseif ($attributeCode == 'group_price') {
                         // nothing

@@ -22,21 +22,35 @@ class Simtech_Searchanise_Block_Product_List_Toolbar extends Mage_Catalog_Block_
     public function getAvailableLimit()
     {
         $availableLimit = parent::getAvailableLimit();
+        $flChange = false;
 
-        if ($availableLimit) {
-            if (array_key_exists('all', $availableLimit)) {
-                unset($availableLimit['all']);
+        if (Mage::helper('searchanise')->checkSearchaniseIsRunning()) {
+            if ($availableLimit) {
                 $maxPageSize = Mage::helper('searchanise/ApiSe')->getMaxPageSize();
-                if (!array_key_exists($maxPageSize, $availableLimit)) {
-                    $availableLimit[$maxPageSize] = $maxPageSize;
-                }
 
-                $currentMode = $this->getCurrentMode();
-                if (in_array($currentMode, array('list', 'grid'))) {
-                    $this->_availableLimit[$currentMode] = $availableLimit;
-                } else {
-                    $this->_defaultAvailableLimit = $availableLimit;
+                if (array_key_exists('all', $availableLimit)) {
+                    unset($availableLimit['all']);
+                    $flChange = true;
                 }
+                foreach ($availableLimit as $key => $value) {
+                    if ($value > $maxPageSize) {
+                        unset($availableLimit[$key]);
+                        $flChange = true;
+                    }
+                }               
+            }
+        }
+
+        if ($flChange) {
+            if (!array_key_exists($maxPageSize, $availableLimit)) {
+                $availableLimit[$maxPageSize] = $maxPageSize;
+            }
+
+            $currentMode = $this->getCurrentMode();
+            if (in_array($currentMode, array('list', 'grid'))) {
+                $this->_availableLimit[$currentMode] = $availableLimit;
+            } else {
+                $this->_defaultAvailableLimit = $availableLimit;
             }
         }
 

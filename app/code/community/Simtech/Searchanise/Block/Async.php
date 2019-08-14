@@ -55,18 +55,21 @@ class Simtech_Searchanise_Block_Async extends Mage_Core_Block_Text
                 }
             }
 
-            if (Mage::helper('searchanise/ApiSe')->checkAjaxAsync()) {
+            if (Mage::helper('searchanise/ApiSe')->checkStartAsync()) {
                 $asyncUrl = Mage::helper('searchanise/ApiSe')->getAsyncUrl(false);
-                $html .= "\n<object data=\"$asyncUrl\" width=\"0\" height=\"0\"></object>\n";
 
-                // code for ajax async
-                // not need in current version
-                // $html .= 
-                // "<script type=\"text/javascript\">
-                // //<![CDATA[
-                //     new Ajax.Request('$asyncUrl', {method: 'get', asynchronous: true});
-                // //]]>
-                // </script>";
+                if (Mage::helper('searchanise/ApiSe')->checkObjectAsync()) {
+                    $html .= "\n<object data=\"$asyncUrl\" width=\"0\" height=\"0\"></object>\n";
+                }
+
+                if (Mage::helper('searchanise/ApiSe')->checkAjaxAsync()) {
+                    $html .= 
+                        "<script type=\"text/javascript\">
+                        //<![CDATA[
+                            new Ajax.Request('$asyncUrl', {method: 'get', asynchronous: true});
+                        //]]>
+                        </script>";
+                }
             }
         }
 
