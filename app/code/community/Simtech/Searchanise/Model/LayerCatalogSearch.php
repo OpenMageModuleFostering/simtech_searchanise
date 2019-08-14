@@ -17,7 +17,7 @@ class Simtech_Searchanise_Model_LayerCatalogSearch extends Mage_CatalogSearch_Mo
     /**
      * Prepare product collection
      *
-     * @param Mage_Catalog_Model_Resource_Eav_Resource_Product_Collection $collection
+     * @param Simtech_Searchanise_Model_Resource_Fulltext_Collection $collection
      * @return Mage_Catalog_Model_Layer
      */
     public function prepareProductCollection($collection)

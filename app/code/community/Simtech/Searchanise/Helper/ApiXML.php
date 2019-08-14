@@ -45,6 +45,63 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             ->addProductFilter($product->getId())
             ->load();
     }
+
+    /**
+     * getProductImageLink
+     *
+     * @param Mage_Catalog_Model_Product $product
+     * @param bool $flagKeepFrame
+     * @param int $width
+     * @param int $height
+     * @return string
+     */
+    private static function getProductImageLink($product, $flagKeepFrame = true, $width = 70, $height = 70)
+    {
+        $imageLink = '';
+
+        if ($product) {
+            if (empty($imageLink)) {
+                $smallImage = $product->getData('small_image');
+
+                if (!empty($smallImage) && $smallImage != 'no_selection') {
+                   $imageLink = Mage::helper('catalog/image')
+                    ->init($product, 'small_image')
+                    ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
+                    ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
+                    ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
+                    ->resize($width, $height);
+                }
+            }
+
+            if (empty($imageLink)) {
+                $image = $product->getData('image');
+
+                if (!empty($image) && $image != 'no_selection') {
+                    $imageLink = Mage::helper('catalog/image')
+                        ->init($product, 'image')
+                        ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
+                        ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
+                        ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
+                        ->resize($width, $height);
+                }
+            }
+
+            if (empty($imageLink)) {
+                $thumbnail = $product->getData('thumbnail');
+                
+                if (!empty($thumbnail) && $thumbnail != 'no_selection') {
+                    $imageLink = Mage::helper('catalog/image')
+                        ->init($product, 'thumbnail')
+                        ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
+                        ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
+                        ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
+                        ->resize($width, $height);
+                }
+            }
+        }
+
+        return $imageLink;
+    }
     
     public static function generateProductXML($product, $store = null)
     {
@@ -145,27 +202,10 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
         // <image_link>
         {
-            $imageLink = '';
-
-            $image = $product->getData('image');
-
-            if (!empty($image) && $image != 'no_selection') { 
-                $imageLink = $product->getImageUrl();
-                
-            } else {
-                $smallImage = $product->getData('small_image');
-
-                if (!empty($smallImage) && $smallImage != 'no_selection') {
-                   $imageLink = $product->getSmallImageUrl();
-
-                } else {
-                    $thumbnail = $product->getData('thumbnail');
-                    
-                    if (!empty($thumbnail) && $thumbnail != 'no_selection') { 
-                        $imageLink = $product->getThumbnailUrl(); 
-                    }
-                }
-            }
+            // Show images without white field
+            // Example: image 360 x 535 => 47 х 70
+            $flagKeepFrame = false;
+            $imageLink = self::getProductImageLink($product, $flagKeepFrame);
 
             if ($imageLink != '') {
                 $entry .= '<cs:image_link><![CDATA[' . $imageLink . ']]></cs:image_link>' . self::XML_END_LINE;

@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -251,6 +251,16 @@
             </searchanise>
         </helpers>
         <events>
+            <!-- SYSTEM -->
+                <clean_catalog_images_cache_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>cleanCatalogImagesCacheAfter</method>
+                        </rating>
+                    </observers>
+                </clean_catalog_images_cache_after>
+            <!-- END SYSTEM -->
             <!-- CATALOG -->
                 <!-- products -->
                 <catalog_product_save_before>

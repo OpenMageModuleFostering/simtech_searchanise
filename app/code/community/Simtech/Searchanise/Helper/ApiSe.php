@@ -15,7 +15,8 @@ class Simtech_Searchanise_Helper_ApiSe
 {
     const COMPRESS_RATE = 5;
 
-    const PLATFORM_NAME = 'magento';
+    const PLATFORM_NAME    = 'magento';
+    const PLATFORM_VERSION = '1.2';
 
     const CONFIG_PREFIX = 'se_';
 
@@ -38,7 +39,8 @@ class Simtech_Searchanise_Helper_ApiSe
     const EXPORT_STATUS_NONE       = 'none';
 
     const STATUS_NORMAL = 'normal';
-    
+    const STATUS_DISABLED = 'disabled';
+        
     public static $exportStatusTypes = array(
         self::EXPORT_STATUS_QUEUED,
         self::EXPORT_STATUS_START,
@@ -713,6 +715,7 @@ class Simtech_Searchanise_Helper_ApiSe
         if (!self::checkParentPrivateKey()) {
             return;
         }
+        self::setNotificationAsyncComleted(false);
         
         Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_PREPARE_FULL_IMPORT, NULL, $curStore);
         
@@ -938,7 +941,6 @@ class Simtech_Searchanise_Helper_ApiSe
         @ignore_user_abort(true);
         @set_time_limit(0);
 
-        self::setNotificationAsyncComleted(false);
         if (self::checkAutoInstall()) {
             self::setAutoInstall(true);
         }
@@ -954,92 +956,97 @@ class Simtech_Searchanise_Helper_ApiSe
             }
         }
         
-        $email = Mage::getSingleton('admin/session')->getUser()->getEmail();
-        
-        $stores = self::getStores($curStore);
-        
-        $parentPrivateKey = self::getParentPrivateKey();
-        
-        foreach ($stores as $store) {
-            $privateKey = self::getPrivateKey($store);
-            
-            if (!empty($privateKey)) {
-                if ($flSendRequest) {
-                    if ($store->getIsActive()) {
-                        self::sendAddonStatusRequest('enabled', $store);
-                    } else {
-                        self::sendAddonStatusRequest('disabled', $store);
-                    }
-                }
-                
-                continue;
-            }
-            
-            if ($showNotification == true && empty($isShowed)) {
-                self::echoConnectProgress('Connecting to Searchanise..');
-                $isShowed = true;
-            }
-            
-            $url = $store->getUrl('', array('_nosid' => true));
-            
-            // need if new store without baseUrl
-            if (!(strstr($url, "http"))) {
-                $base_url = Mage::app()->getStore()->getBaseUrl();
-                
-                $url = str_replace('index.php/', $base_url, $url);
-            }
-            
-            list($h, $res) = self::httpRequest(
-                Zend_Http_Client::POST,
-                self::getServiceUrl() . '/api/signup',
-                array(
-                    'url'                => $url,
-                    'email'              => $email,
-                    'version'            => self::getVersion(),
-                    'platform'           => self::PLATFORM_NAME,
-                    'parent_private_key' => $parentPrivateKey,        
-                ),
-                array(),
-                array(),
-                self::getRequestTimeout()
-            );
-            
-            if ($showNotification == true) {
-                self::echoConnectProgress('.');
-            }
-            
-            if (!empty($res)) {
-                $res = self::parseResponse($res, true);
-                
-                if (is_object($res)) {
-                    $api_key = (string)$res->api;
-                    $privateKey = (string)$res->private;
-                    
-                    if (empty($api_key) || empty($privateKey)) {
-                        return false;
-                    }
-                    
-                    if (empty($parentPrivateKey)) {
-                        self::setParentPrivateKey($privateKey);
-                        $parentPrivateKey = $privateKey;
-                    }
-                    
-                    self::setApiKey($api_key, $store);
-                    self::setPrivateKey($privateKey, $store);
-                    
-                    $connected = true;
-                    
-                } else {
-                    if ($showNotification == true) {
-                        self::echoConnectProgress(' Error<br />');
-                    }
+        $adminSession = Mage::getSingleton('admin/session');
+        $email = '';
+        if ($adminSession) {
+            $email = $adminSession->getUser()->getEmail();
+        }
 
-                    break;
-                }
-            }
+        if ($email != '') {
+            $stores = self::getStores($curStore);
+            $parentPrivateKey = self::getParentPrivateKey();
             
-            self::setExportStatus(self::EXPORT_STATUS_NONE, $store);
-            self::setUseNavigation(true);
+            foreach ($stores as $store) {
+                $privateKey = self::getPrivateKey($store);
+                
+                if (!empty($privateKey)) {
+                    if ($flSendRequest) {
+                        if ($store->getIsActive()) {
+                            self::sendAddonStatusRequest('enabled', $store);
+                        } else {
+                            self::sendAddonStatusRequest('disabled', $store);
+                        }
+                    }
+                    
+                    continue;
+                }
+                
+                if ($showNotification == true && empty($isShowed)) {
+                    self::echoConnectProgress('Connecting to Searchanise..');
+                    $isShowed = true;
+                }
+                
+                $url = $store->getUrl('', array('_nosid' => true));
+                
+                // need if new store without baseUrl
+                if (!(strstr($url, "http"))) {
+                    $base_url = Mage::app()->getStore()->getBaseUrl();
+                    
+                    $url = str_replace('index.php/', $base_url, $url);
+                }
+                
+                list($h, $res) = self::httpRequest(
+                    Zend_Http_Client::POST,
+                    self::getServiceUrl() . '/api/signup',
+                    array(
+                        'url'                => $url,
+                        'email'              => $email,
+                        'version'            => self::PLATFORM_VERSION,
+                        'platform'           => self::PLATFORM_NAME,
+                        'parent_private_key' => $parentPrivateKey,        
+                    ),
+                    array(),
+                    array(),
+                    self::getRequestTimeout()
+                );
+                
+                if ($showNotification == true) {
+                    self::echoConnectProgress('.');
+                }
+                
+                if (!empty($res)) {
+                    $res = self::parseResponse($res, true);
+                    
+                    if (is_object($res)) {
+                        $api_key = (string)$res->api;
+                        $privateKey = (string)$res->private;
+                        
+                        if (empty($api_key) || empty($privateKey)) {
+                            return false;
+                        }
+                        
+                        if (empty($parentPrivateKey)) {
+                            self::setParentPrivateKey($privateKey);
+                            $parentPrivateKey = $privateKey;
+                        }
+                        
+                        self::setApiKey($api_key, $store);
+                        self::setPrivateKey($privateKey, $store);
+                        
+                        $connected = true;
+                        
+                    } else {
+                        if ($showNotification == true) {
+                            self::echoConnectProgress(' Error<br />');
+                        }
+
+                        break;
+                    }
+                }
+                
+                self::setExportStatus(self::EXPORT_STATUS_NONE, $store);
+                self::setUseNavigation(true);
+            }
         }
 
         if ($connected == true && $showNotification == true) {
@@ -1601,13 +1608,16 @@ class Simtech_Searchanise_Helper_ApiSe
                 
                 $variables = self::parseStateResponse($xml);
 
-                if ((!empty($variables)) && 
-                    (isset($variables['status'])) &&
-                    ($variables['status'] == self::STATUS_NORMAL) && 
-                    (isset($variables['full_import'])) &&
-                    ($variables['full_import'] == self::EXPORT_STATUS_DONE)) {
-                    $skipTimeCheck = true;
-                    self::setExportStatus(self::EXPORT_STATUS_DONE, $store);
+                if ((!empty($variables)) && (isset($variables['status']))) {
+                    if (($variables['status'] == self::STATUS_NORMAL) && 
+                        (isset($variables['full_import'])) &&
+                        ($variables['full_import'] == self::EXPORT_STATUS_DONE)) {
+                        $skipTimeCheck = true;
+                        self::setExportStatus(self::EXPORT_STATUS_DONE, $store);
+
+                    } elseif ($variables['status'] == self::STATUS_DISABLED) {
+                        self::setExportStatus(self::EXPORT_STATUS_NONE, $store);
+                    }
                 }
             }
             if (self::getExportStatus($store) != self::EXPORT_STATUS_DONE) {

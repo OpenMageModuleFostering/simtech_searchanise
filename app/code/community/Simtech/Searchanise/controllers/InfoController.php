@@ -14,12 +14,14 @@
 
 class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Action
 {
+    const RESYNC             = 'resync'; 
     const OUTPUT             = 'visual';
     const PRODUCT_IDS        = 'product_ids';
     const PARENT_PRIVATE_KEY = 'parent_private_key';
 
     public function indexAction()
     {
+        $resync           = $this->getRequest()->getParam(self::RESYNC);
         $visual           = $this->getRequest()->getParam(self::OUTPUT);
         $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
         $parentPrivateKey = $this->getRequest()->getParam(self::PARENT_PRIVATE_KEY);
@@ -40,7 +42,10 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 echo Mage::helper('core')->jsonEncode($options);
             }
         } else {
-            if (!empty($productIds)) {
+            if ($resync) {
+                Mage::helper('searchanise/ApiSe')->queueImport();
+
+            } elseif (!empty($productIds)) {
                 $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds);
 
                 if ($visual) {
@@ -49,6 +54,8 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                     echo Mage::helper('core')->jsonEncode($productFeeds);
                 }
             } else {
+                Mage::helper('searchanise/ApiSe')->checkImportIsDone();
+                
                 $options = Mage::helper('searchanise/ApiSe')->getAddonOptions();
 
                 if ($visual) {

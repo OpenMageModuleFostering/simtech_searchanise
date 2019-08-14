@@ -21,7 +21,11 @@ class Simtech_Searchanise_Model_Observer
     {
         // nothing for now
     }
-    
+
+    /**
+     * Function for cron
+     *
+     */
     public function autoSync()
     {
         Mage::helper('searchanise/ApiSe')->log('start cron autoSync', 'information');
@@ -41,6 +45,19 @@ class Simtech_Searchanise_Model_Observer
         
         return $this;
     }
+
+    // FOR SYSTEM //
+    /**
+     * After image cache was cleaned
+     *
+     */
+    public function cleanCatalogImagesCacheAfter()
+    {
+        Mage::helper('searchanise/ApiSe')->queueImport();
+
+        return $this;
+    }
+    // END FOR SYSTEM //
     
     // FOR PRODUCTS //
     /**

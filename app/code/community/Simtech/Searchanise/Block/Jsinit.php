@@ -106,6 +106,14 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
         //         }
         //     </style>';
 
+        // Uncomment the lines below if it is necessary to fix size images in widget
+        // $html .= '
+        //     <style type="text/css">
+        //         .snize-item-image {
+        //             max-width: 70px !important;
+        //         }
+        //     </style>';
+
         return $html;
     }
 }
