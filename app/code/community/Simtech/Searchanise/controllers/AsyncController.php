@@ -13,6 +13,7 @@
 ****************************************************************************/
 class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Action
 {
+    const PARENT_PRIVATE_KEY = 'parent_private_key';
     protected $_notUseHttpRequestText = null;
     protected $_flShowStatusAsync = null;
     
@@ -71,6 +72,14 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
     public function indexAction()
     {
         if (Mage::helper('searchanise/ApiSe')->getStatusModule() == 'Y') {
+            $parentPrivateKey = $this->getRequest()->getParam(self::PARENT_PRIVATE_KEY);
+            if ((empty($parentPrivateKey)) || 
+                (Mage::helper('searchanise/ApiSe')->getParentPrivateKey() !== $parentPrivateKey)) {
+                $checkKey = false;
+            } else {
+                $checkKey = true;
+            }
+
             // not need because it checked in the "Async.php" block
             // if (Mage::helper('searchanise/ApiSe')->checkStartAsync()) {
             if (true) {
@@ -84,8 +93,18 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
                 if ($check) {
                     @ignore_user_abort(true);
                     @set_time_limit(0);
+                    if ($checkKey && $this->getRequest()->getParam('display_errors') === 'Y') {
+                        @error_reporting (E_ALL);
+                        @ini_set('display_errors', 1);
+                    } else {
+                        @ini_set('display_errors', 0);
+                    }
+                    $flIgnoreProcessing = false;
+                    if ($checkKey && $this->getRequest()->getParam('ignore_processing') === 'Y') {
+                        $flIgnoreProcessing = true;
+                    }
                     
-                    $result = Mage::helper('searchanise/ApiSe')->async();
+                    $result = Mage::helper('searchanise/ApiSe')->async($flIgnoreProcessing);
 
                     if ($this->checkShowSatusAsync()) {
                         echo 'Searchanise status sync: ';

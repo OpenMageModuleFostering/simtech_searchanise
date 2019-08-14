@@ -490,6 +490,11 @@ class Simtech_Searchanise_Helper_ApiSe
     {
         return self::getSetting('server_version');
     }
+
+    public static function getAsyncMemoryLimit()
+    {
+        return self::getSetting('async_memory_limit');
+    }
     
     public static function getSearchTimeout()
     {
@@ -1136,42 +1141,49 @@ class Simtech_Searchanise_Helper_ApiSe
     
     public static function getMinMaxProductId($store = null)
     {
-        $start = 0;
-        $max = 0;
-        $startCollection = Mage::getModel('catalog/product')
+        $startId = 0;
+        $endId = 0;
+
+        $productStartCollection = Mage::getModel('catalog/product')
             ->getCollection()
             ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_ASC)
             ->setPageSize(1);
         if ($store) {
-            $startCollection = $startCollection->addStoreFilter($store);
+            $productStartCollection = $productStartCollection->addStoreFilter($store);
         }
-        $startCollection = $startCollection->load()->toArray();
-        
-        $maxCollection = Mage::getModel('catalog/product')
+        $productStartCollection = $productStartCollection->load();
+
+        $productEndCollection = Mage::getModel('catalog/product')
             ->getCollection()
             ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_DESC)
             ->setPageSize(1);
         if ($store) {
-            $maxCollection = $maxCollection->addStoreFilter($store);
+            $productEndCollection = $productEndCollection->addStoreFilter($store);
         }
-        $maxCollection = $maxCollection->load()->toArray();
+        $productEndCollection = $productEndCollection->load();
 
-        if (!empty($startCollection)) {
-            $start = reset($startCollection);
-            $start = (int) $start['entity_id'];
+        if ($productStartCollection) {
+            $productArr = $productStartCollection->toArray(array('entity_id'));
+            if (!empty($productArr)) {
+                $firstItem = reset($productArr);
+                $startId = $firstItem['entity_id'];
+            }
         }
-        
-        if (!empty($maxCollection)) {
-            $max = reset($maxCollection);
-            $max = (int) $max['entity_id'];
+
+        if ($productEndCollection) {
+            $productArr = $productEndCollection->toArray(array('entity_id'));
+            if (!empty($productArr)) {
+                $firstItem = reset($productArr);
+                $endId = $firstItem['entity_id'];
+            }
         }
-        
-        return array($start, $max);
+
+        return array($startId, $endId);
     }
     
     public static function getProductIdsFormRange($start, $end, $step, $store = null)
     {
-        $ret = array();
+        $arrProducts = array();
         
         $products = Mage::getModel('catalog/product')
             ->getCollection()
@@ -1179,23 +1191,26 @@ class Simtech_Searchanise_Helper_ApiSe
             ->setPageSize($step);
         
         if (!empty($store)) {
-            $products->addStoreFilter($store);
+            $products = $products->addStoreFilter($store);
         }
         
-        $products->load();
-        
-        if (!empty($products)) {
+        $products = $products->load();
+        if ($products) {
+            // Not used because 'arrProducts' comprising 'stock_item' field and is 'array(array())'
+            // $arrProducts = $products->toArray(array('entity_id'));
             foreach ($products as $product) {
-                $ret[] = $product->getId();
+                $arrProducts[] = $product->getId();
             }
         }
-        
-        return $ret;
+        // It is necessary for save memory.
+        unset($products);
+
+        return $arrProducts;
     }
     
     public static function getFilterableFiltersIds($store = null)
     {
-        $ret = array();
+        $arrFilters = array();
         
         $filters = Mage::getResourceModel('catalog/product_attribute_collection')
             ->setItemObjectClass('catalog/resource_eav_attribute')
@@ -1205,20 +1220,22 @@ class Simtech_Searchanise_Helper_ApiSe
             $filters->addStoreLabel($store->getId());
         }
             
-        $filters->load();
-        
-        if (!empty($filters)) {
+        if ($filters) {
+            // It not used because 'arrFilters' is array(array())
+            // $arrFilters = $filters->toArray(array('attribute'));
             foreach ($filters as $filter) {
-                $ret[] = $filter->getId();
+                $arrFilters[] = $filter->getId();
             }
         }
+        // It is necessary for save memory.
+        unset($filters);
 
-        return $ret;
+        return $arrFilters;
     }
 
     public static function getFilterableInSearchFiltersIds($store = null)
     {
-        $ret = array();
+        $arrFilters = array();
         
         $filters = Mage::getResourceModel('catalog/product_attribute_collection')
             ->setItemObjectClass('catalog/resource_eav_attribute')
@@ -1227,16 +1244,20 @@ class Simtech_Searchanise_Helper_ApiSe
         if (!empty($store)) {
             $filters->addStoreLabel($store->getId());
         }
-            
+
         $filters->load();
         
-        if (!empty($filters)) {
+        if ($filters) {
+            // It not used because 'arrFilters' is array(array())
+            // $arrFilters = $filters->toArray(array('attribute'));
             foreach ($filters as $filter) {
-                $ret[] = $filter->getId();
+                $arrFilters[] = $filter->getId();
             }
         }
+        // It is necessary for save memory.
+        unset($filters);
 
-        return $ret;
+        return $arrFilters;
     }
 
     public static function getFiltersIds($store = null)
@@ -1305,25 +1326,33 @@ class Simtech_Searchanise_Helper_ApiSe
         return $ret;
     }
 
-    public static function async()
+    public static function async($flIgnoreProcessing = false)
     {
         @ignore_user_abort(true);
         @set_time_limit(0);
+        // Adding memory if necessary
+        $asyncMemoryLimit = Mage::helper('searchanise/ApiSe')->getAsyncMemoryLimit();
+        if (substr(ini_get('memory_limit'), 0, -1) < $asyncMemoryLimit) {
+            @ini_set('memory_limit', $asyncMemoryLimit . 'M');
+        }
+        
         // Need for get all products.
-        Mage::app()->setCurrentStore(0);
-        
-        $xmlHeader = Mage::helper('searchanise/ApiXML')->getXMLHeader();
-        $xmlFooter = Mage::helper('searchanise/ApiXML')->getXMLFooter();
-        
+        Mage::app()->setCurrentStore('admin');
+
         self::echoConnectProgress('.');
         
         $q = Mage::getModel('searchanise/queue')->getNextQueue();
         
         while (!empty($q)) {
+            if (Mage::helper('searchanise')->checkDebug()) {
+                Mage::helper('searchanise/ApiSe')->printR($q);
+            }
             $xml = '';
             $status = true;
-            $store = Mage::app()->getStore($q['store_id']);
             $data = array();
+            $store = Mage::app()->getStore($q['store_id']);
+            $xmlHeader = Mage::helper('searchanise/ApiXML')->getXMLHeader($store);
+            $xmlFooter = Mage::helper('searchanise/ApiXML')->getXMLFooter($store);
             if ((!empty($q['data'])) && ($q['data'] != Simtech_Searchanise_Model_Queue::NOT_DATA)) {
                 $data = unserialize($q['data']);
             }
@@ -1339,7 +1368,9 @@ class Simtech_Searchanise_Helper_ApiSe
             
             //Note: $q['started'] can be in future.
             if ($q['status'] == Simtech_Searchanise_Model_Queue::STATUS_PROCESSING && ($q['started'] + self::getMaxProcessingTime() > self::getTime())) {
-                return Simtech_Searchanise_Model_Queue::STATUS_PROCESSING;
+                if (!$flIgnoreProcessing) {
+                    return Simtech_Searchanise_Model_Queue::STATUS_PROCESSING;
+                }
             }
             
             if ($q['error_count'] >= self::getMaxErrorCount()) {
@@ -1362,59 +1393,48 @@ class Simtech_Searchanise_Helper_ApiSe
                     ->addFilter('store_id', $store->getId())
                     ->load()
                     ->delete();
-                
+
                 $queueData = array(
                     'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
                     'action'   => Simtech_Searchanise_Model_Queue::ACT_START_FULL_IMPORT,
                     'store_id' => $store->getId(),
                 );
-                
+
                 Mage::getModel('searchanise/queue')->setData($queueData)->save();
                 
                 $i = 0;
                 $step = self::getProductsPerPass() * 50;
-                
-                $sqls_arr = array();
-                
+
                 list($start, $max) = self::getMinMaxProductId($store);
-                
+
                 do {
                     $end = $start + $step;
                     
-                    $_product_ids = self::getProductIdsFormRange($start, $end, $step, $store);
+                    $_productIds = self::getProductIdsFormRange($start, $end, $step, $store);
                     
                     $start = $end + 1;
                     
-                    if (empty($_product_ids)) {
+                    if (empty($_productIds)) {
                         continue;
                     }
-                    $_product_ids = array_chunk($_product_ids, self::getProductsPerPass());
+                    $_productIds = array_chunk($_productIds, self::getProductsPerPass());
                     
-                    foreach ($_product_ids as $product_ids) {
-                        $sqls_arr[] = array(
-                            'data'     => serialize($product_ids),
+                    foreach ($_productIds as $productIds) {
+                        $_data = serialize($productIds);
+                        $queueData = array(
+                            'data'     => $_data,
                             'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE,
                             'store_id' => $store->getId(),
                         );
+                        $_result = Mage::getModel('searchanise/queue')->setData($queueData)->save();
+                        // It is necessary for save memory.
+                        unset($_result);
+                        unset($_data);
+                        unset($queueData);
                     }
                     
-                    // fixme if need
-                    // need change one sql if exist opportunity
-                    /*if (count($sqls_arr) >= 30) {
-                        //~ db_query("INSERT INTO ?:se_queue (`data`, `action`, `lang_code`) VALUES " . join(',', $sqls_arr));
-                        
-                        self::echoConnectProgress('.');
-                        $sqls_arr = array();
-                    }*/
-                    // end fixme
                 } while ($end <= $max);
-                
-                if (count($sqls_arr) > 0) {
-                    foreach ($sqls_arr as $queueData) {
-                        Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                    }
-                }
-                
+
                 self::echoConnectProgress('.');
                 
                 //
@@ -1557,6 +1577,10 @@ class Simtech_Searchanise_Helper_ApiSe
                         break;
                     }
                 }
+            }
+
+            if (Mage::helper('searchanise')->checkDebug()) {
+                Mage::helper('searchanise/ApiSe')->printR('status', $status);
             }
             
             // Change queue item status
@@ -1797,22 +1821,7 @@ class Simtech_Searchanise_Helper_ApiSe
         
         return $ret;
     }
-
-    public static function changeAmpersand($str = '')
-    {
-        if (!empty($str)) {
-            if (strpos($str, '&amp;') !== false) {
-                return $str;
-            }
-
-            if (strpos($str, '&') !== false) {
-                return str_replace('&','&amp;',$str); 
-            }
-        }
-
-        return $str;
-    }
-
+    
     function printR()
     {
         static $count = 0;

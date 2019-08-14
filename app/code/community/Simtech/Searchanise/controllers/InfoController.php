@@ -16,8 +16,9 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 {
     const RESYNC             = 'resync'; 
     const OUTPUT             = 'visual';
-    const PROFILER             = 'profiler';
+    const PROFILER           = 'profiler';
     const STORE_ID           = 'store_id';
+    const CHECK_DATA         = 'check_data';
     const PRODUCT_ID         = 'product_id';
     const PRODUCT_IDS        = 'product_ids';
     const PARENT_PRIVATE_KEY = 'parent_private_key';
@@ -47,19 +48,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 
     public function indexAction()
     {
-        $resync           = $this->getRequest()->getParam(self::RESYNC);
-        $visual           = $this->getRequest()->getParam(self::OUTPUT);
-        $profiler         = $this->getRequest()->getParam(self::PROFILER);
-        $storeId          = $this->getRequest()->getParam(self::STORE_ID);
-        $productId        = $this->getRequest()->getParam(self::PRODUCT_ID);
-        $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
         $parentPrivateKey = $this->getRequest()->getParam(self::PARENT_PRIVATE_KEY);
-
-        if ($productId) {
-            $productIds = array($productId);
-        } elseif ($productIds) {
-            $productIds = explode(',', $productIds);
-        }
 
         if ((empty($parentPrivateKey)) || 
             (Mage::helper('searchanise/ApiSe')->getParentPrivateKey() !== $parentPrivateKey)) {
@@ -75,6 +64,21 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 echo Mage::helper('core')->jsonEncode($options);
             }
         } else {
+            @ini_set('display_errors', 1);
+            $resync           = $this->getRequest()->getParam(self::RESYNC);
+            $visual           = $this->getRequest()->getParam(self::OUTPUT);
+            $profiler         = $this->getRequest()->getParam(self::PROFILER);
+            $storeId          = $this->getRequest()->getParam(self::STORE_ID);
+            $checkData        = $this->getRequest()->getParam(self::CHECK_DATA);
+            $productId        = $this->getRequest()->getParam(self::PRODUCT_ID);
+            $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
+
+            if ($productId) {
+                $productIds = array($productId);
+            } elseif ($productIds) {
+                $productIds = explode(',', $productIds);
+            }
+
             $store = null;
             if (!empty($storeId)) {
                 $store = Mage::app()->getStore($storeId);
@@ -116,14 +120,19 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 Mage::helper('searchanise/ApiSe')->queueImport();
 
             } elseif (!empty($productIds)) {
-
-                $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store);
+                $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store, false, $checkData);
+                if ($productFeeds) {
+                    $xmlHeader = Mage::helper('searchanise/ApiXML')->getXMLHeader($store);
+                    $xmlFooter = Mage::helper('searchanise/ApiXML')->getXMLFooter($store);
+                    $productFeeds = $xmlHeader . $productFeeds . $xmlFooter;
+                }
 
                 if ($visual) {
                     Mage::helper('searchanise/ApiSe')->printR($productFeeds);
                 } else {
                     echo Mage::helper('core')->jsonEncode($productFeeds);
                 }
+
             } else {
                 Mage::helper('searchanise/ApiSe')->checkImportIsDone();
                 
@@ -145,6 +154,13 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 $options['ignore_user_abort'] = ini_get('ignore_user_abort');
                 @ignore_user_abort(1);
                 $options['ignore_user_abort_after'] = ini_get('ignore_user_abort_after');
+
+                $options['memory_limit'] = ini_get('memory_limit');
+                $asyncMemoryLimit = Mage::helper('searchanise/ApiSe')->getAsyncMemoryLimit();
+                if (substr(ini_get('memory_limit'), 0, -1) < $asyncMemoryLimit) {
+                    @ini_set('memory_limit', $asyncMemoryLimit . 'M');
+                }
+                $options['memory_limit_after'] = ini_get('memory_limit');
 
                 if ($visual) {
                     Mage::helper('searchanise/ApiSe')->printR($options);

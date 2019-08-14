@@ -305,9 +305,18 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         return $minimalPrice;
     }
 
-    public static function generateProductXML($product, $store = null)
+    public static function generateProductXML($product, $store = null, $checkData = true)
     {
-        $entry = '<entry>' . self::XML_END_LINE;
+        $entry = '';
+        if ($checkData) {
+            if (!$product ||
+                !$product->getId() ||
+                !$product->getName()
+                ) {
+                return $entry;
+            }
+        }
+        $entry .= '<entry>' . self::XML_END_LINE;
         $entry .= '<id>' . $product->getId() . '</id>' . self::XML_END_LINE;
         
         $entry .= '<title><![CDATA[' . $product->getName() . ']]></title>' . self::XML_END_LINE;
@@ -320,7 +329,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         $entry .= '<summary><![CDATA[' . $summary. ']]></summary>' . self::XML_END_LINE;
         
         $productUrl = $product->getProductUrl(false);
-        $productUrl = Mage::helper('searchanise/ApiSe')->changeAmpersand($productUrl);
+        $productUrl = htmlspecialchars($productUrl);
         $entry .= '<link href="' . $productUrl . '" />' . self::XML_END_LINE;
         $entry .= '<cs:product_code><![CDATA[' . $product->getSku() . ']]></cs:product_code>' . self::XML_END_LINE;
 
@@ -524,10 +533,6 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
                             if ($textValue != '') {
                                 $entry .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                                // fixme in the future
-                                // need for fixed bug of Server
-                                $entry .= ' ';
-                                // end fixme
                                 $entry .= '<![CDATA[' . $textValue . ']]>';
                                 $entry .= '</cs:attribute>' . self::XML_END_LINE;
                             }
@@ -542,7 +547,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                             if (!empty($arrValues)) {
                                 foreach ($arrValues as $v) {
                                     if ($v != '') {
-                                        $strIdValues .= '<value>' . $v . '</value>';
+                                        $strIdValues .= '<value><![CDATA[' . $v . ']]></value>';
                                     }
                                 }
                             }
@@ -620,10 +625,10 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             $entry .= '<cs:attribute name="categories" type="text">';
             // need, it's important
             $entry .= ' ';
-            $category_ids = $product->getCategoryIds();
-            if (!empty($category_ids)) {
-                foreach ($category_ids as $cat_key => $category_id) {
-                    $entry .= '<value>' . $category_id . '</value>';
+            $categoryIds = $product->getCategoryIds();
+            if (!empty($categoryIds)) {
+                foreach ($categoryIds as $catKey => $categoryId) {
+                    $entry .= '<value><![CDATA[' . $categoryId . ']]></value>';
                 }
             }
             $entry .= '</cs:attribute>' . self::XML_END_LINE;
@@ -648,7 +653,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             if ($tags) {
                 foreach ($tags as $tag) {
                     if ($tag != '') {
-                        $strTagIds .= '<value>' . $tag->getId() . '</value>';
+                        $strTagIds .= '<value><![CDATA[' . $tag->getId() . ']]></value>';
                         $strTagNames .= '<value><![CDATA[' . $tag->getName() . ']]></value>';
                     }
                 }
@@ -664,10 +669,6 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 $entry .= '</cs:attribute>' . self::XML_END_LINE;
 
                 $entry .= '<cs:attribute name="tags" type="text" text_search="Y" weight="' . self::WEIGHT_TAGS .'">';
-                // fixme in the future
-                // need for fixed bug of Server
-                $entry .= ' ';
-                // end fixme
                 $entry .= $strTagNames;
                 $entry .= '</cs:attribute>' . self::XML_END_LINE;
             }
@@ -795,16 +796,27 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         }
 
         foreach ($productIds as $key => $productId) {
+            if (empty($productId)) {
+                continue;
+            }
+            // It can use various types of data.
+            if (is_array($productId)) {
+                if (isset($productId['entity_id'])) {
+                    $productId = $productId['entity_id'];
+                }
+            }
             $product = Mage::getModel('catalog/product')->load($productId);
-            
-            if ($store) {
-                $product->setWebsiteId($store->getWebsiteId());
-            }
-            if ($customerGroupId != null) {
-                $product->setCustomerGroupId($customerGroupId);
-            }
 
-            $products[] = $product;
+            if ($product) {
+                if ($store) {
+                    $product->setWebsiteId($store->getWebsiteId());
+                }
+                if ($customerGroupId != null) {
+                    $product->setCustomerGroupId($customerGroupId);
+                }
+
+                $products[] = $product;
+            }
         }
 
         return $products;
@@ -878,7 +890,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     }
 
     // Main functions //
-    public static function generateProductsXML($productIds = null, $store = null, $flagAddMinimalPrice = false)
+    public static function generateProductsXML($productIds = null, $store = null, $flagAddMinimalPrice = false, $checkData = true)
     {
         $ret = '';
 
@@ -906,7 +918,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                     $arrAdditionalProducts = $additionalProducts->toArray();
                     if ((!empty($arrAdditionalProducts)) && (count($arrAdditionalProducts) != 0)) {
                         foreach ($additionalProducts as $product) {
-                            $ret .= self::generateProductXML($product, $store);
+                            $ret .= self::generateProductXML($product, $store, $checkData);
                         }
                     }
                 }
@@ -916,7 +928,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
         if ($products) {
             foreach ($products as $product) {
-                $ret .= self::generateProductXML($product, $store);
+                $ret .= self::generateProductXML($product, $store, $checkData);
             }
         }
         
@@ -991,7 +1003,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         $url = '';
         
         if (empty($store)) {
-            $store = Mage::app()->getStore()->getBaseUrl();
+            $url = Mage::app()->getStore()->getBaseUrl();
         } else {
             $url = $store->getUrl();
         }

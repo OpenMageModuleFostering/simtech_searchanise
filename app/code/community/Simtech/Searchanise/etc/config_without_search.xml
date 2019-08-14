@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>1.1.6</version>
+            <version>1.1.7</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -562,6 +562,7 @@
         <searchanise>
             <config>
                 <server_version>1.2</server_version>
+                <async_memory_limit>512</async_memory_limit>
                 <search_timeout>3</search_timeout>
                 <request_timeout>10</request_timeout>
                 <ajax_async_timeout>1</ajax_async_timeout>
