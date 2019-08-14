@@ -11,13 +11,14 @@
 * PLEASE READ THE FULL TEXT  OF THE SOFTWARE  LICENSE   AGREEMENT  IN  THE *
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
+
 class Simtech_Searchanise_Helper_ApiSe
 {
     const COMPRESS_RATE = 5;
-
-    const PLATFORM_NAME    = 'magento';
-
+    const PLATFORM_NAME = 'magento';
     const CONFIG_PREFIX = 'se_';
+
+    const MAX_PAGE_SIZE = 100; // The "All" variant of the items per page menu is replaced with this value if the "Allow All Products per Page" option is active.
 
     // const MIN_QUANTITY_DECIMALS = '0.00001';
     const MIN_QUANTITY_DECIMALS = ''; // not activated, because Server have floaf = decimal(12,2) 
@@ -97,6 +98,11 @@ class Simtech_Searchanise_Helper_ApiSe
         return self::getSetting('type_async');
     }
 
+    public static function getEnabledSearchaniseSearch()
+    {
+        return self::getSetting('enabled_searchanise_search');
+    }
+
     public static function checkAjaxAsync()
     {
         return self::getTypeAsync() == 2;
@@ -112,6 +118,10 @@ class Simtech_Searchanise_Helper_ApiSe
             $customerGroupId = 0;
         }
         return self::getLabelForPricesUsergroup() . $customerGroupId;
+    }
+
+    public static function getMaxPageSize() {
+        return self::MAX_PAGE_SIZE;
     }
 
     public static function getFloatPrecision() {
@@ -270,8 +280,11 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function getUrl($link, $flNotUserHttpRequest = false, $storeId = '', $flCheckSecure = true)
     {
         if ($storeId != '') {
+            $prevStoreId = Mage::app()->getStore()->getId();
             // need for generate correct url
-            Mage::app()->setCurrentStore($storeId);
+            if ($prevStoreId != $storeId) {
+                Mage::app()->setCurrentStore($storeId);
+            }
         }
 
         $params = array();
@@ -287,6 +300,12 @@ class Simtech_Searchanise_Helper_ApiSe
         if ($flNotUserHttpRequest) {
             $url .= strpos($asyncUrl, '?') === false ? '?' : '&';
             $url .= self::getParamNotUseHttpRequest();
+        }
+
+        if ($storeId != '') {
+            if ($prevStoreId != $storeId) {
+                Mage::app()->setCurrentStore($prevStoreId);
+            }
         }
 
         return $url;
@@ -413,6 +432,7 @@ class Simtech_Searchanise_Helper_ApiSe
         
         $ret['parent_private_key'] = self::getParentPrivateKey();
         $ret['private_key']        = self::getPrivateKeys();
+        $ret['api_key']            = self::getApiKeys();
         $ret['export_status']      = self::getExportStatuses();
         
         $ret['last_request'] = self::formatDate(self::getLastRequest(), Mage_Core_Model_Locale::FORMAT_TYPE_MEDIUM, true);
@@ -505,6 +525,20 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function getApiKey($store = null)
     {
         return self::getSettingStore('api_key', $store, self::CONFIG_PREFIX);
+    }
+
+    public static function getApiKeys()
+    {
+        $ret = array();
+        $stores = Mage::app()->getStores();
+        
+        if ($stores != '') {
+            foreach ($stores as $k_store => $store) {
+                $ret[$store->getId()] = self::getApiKey($store);
+            }
+        }
+        
+        return $ret;
     }
     
     public static function getDate()
@@ -1261,6 +1295,8 @@ class Simtech_Searchanise_Helper_ApiSe
     {
         @ignore_user_abort(true);
         @set_time_limit(0);
+        // Need for get all products.
+        Mage::app()->setCurrentStore(0);
         
         $xmlHeader = Mage::helper('searchanise/ApiXML')->getXMLHeader();
         $xmlFooter = Mage::helper('searchanise/ApiXML')->getXMLFooter();
@@ -1356,6 +1392,7 @@ class Simtech_Searchanise_Helper_ApiSe
                         self::echoConnectProgress('.');
                         $sqls_arr = array();
                     }*/
+                    // end fixme
                 } while ($end <= $max);
                 
                 if (count($sqls_arr) > 0) {
@@ -1399,18 +1436,7 @@ class Simtech_Searchanise_Helper_ApiSe
                     
                     Mage::getModel('searchanise/queue')->setData($queueData)->save();
                 }
-
-                // add facet-prices
-                {
-                    $queueData = array(
-                        'data'     => serialize(Simtech_Searchanise_Model_Queue::DATA_FACET_PRICES),
-                        'action'   => Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE,
-                        'store_id' => $store->getId(),
-                    );
-                    
-                    Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                }
-                
+                                
                 // add facet-tags
                 {
                     $queueData = array(
@@ -1453,7 +1479,7 @@ class Simtech_Searchanise_Helper_ApiSe
             } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE) {
                 if ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_CATEGORIES) {
                     $xml .= Mage::helper('searchanise/ApiXML')->generateFacetXMLCategories();
-                
+                    
                 } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_PRICES) {
                     $xml .= Mage::helper('searchanise/ApiXML')->generateFacetXMLPrices();
 

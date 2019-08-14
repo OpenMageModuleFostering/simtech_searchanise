@@ -11,10 +11,26 @@
 * PLEASE READ THE FULL TEXT  OF THE SOFTWARE  LICENSE   AGREEMENT  IN  THE *
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
+
 class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 {
     const XML_END_LINE = "\n";
-    
+
+    const WEIGHT_SHORT_DESCRIPTION =  0; // not need because use in summary
+    const WEIGHT_DESCRIPTION       = 40;
+
+    const WEIGHT_TAGS              = 60;
+
+    // <if_isSearchable>
+    const WEIGHT_META_TITLE        =  80;
+    const WEIGHT_META_KEYWORDS     = 100;
+    const WEIGHT_META_DESCRIPTION  =  40;
+
+    const WEIGHT_SELECT_ATTRIBUTES    = 60;
+    const WEIGHT_TEXT_ATTRIBUTES      = 60;
+    const WEIGHT_TEXT_AREA_ATTRIBUTES = 40;
+    // </if_isSearchable>
+
     public static function getStockItem($product, $store = null)
     {
         $stockItem = null;
@@ -64,12 +80,12 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 $smallImage = $product->getData('small_image');
 
                 if (!empty($smallImage) && $smallImage != 'no_selection') {
-                   $imageLink = Mage::helper('catalog/image')
-                    ->init($product, 'small_image')
-                    ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
-                    ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
-                    ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
-                    ->resize($width, $height);
+                    $imageLink = Mage::helper('catalog/image')
+                        ->init($product, 'small_image')
+                        ->constrainOnly(true)       // Guarantee, that image picture will not be bigger, than it was.
+                        ->keepAspectRatio(true)     // Guarantee, that image picture width/height will not be distorted.
+                        ->keepFrame($flagKeepFrame) // Guarantee, that image will have dimensions, set in $width/$height
+                        ->resize($width, $height);
                 }
             }
 
@@ -249,7 +265,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         $summary = $product->getData('short_description');
         
         if ($summary == '') { 
-            $summary = $product->getData('description'); 
+            $summary = $product->getData('description');
         }
         $entry .= '<summary><![CDATA[' . $summary. ']]></summary>' . self::XML_END_LINE;
         
@@ -296,7 +312,10 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             $quantity = self::getProductQty($product, $store, true);
 
             $entry .= '<cs:quantity>' . ceil($quantity) . '</cs:quantity>' . self::XML_END_LINE;
-            $entry .= '<cs:attribute name="is_in_stock" type="text">' . ($quantity > 0) . '</cs:attribute>' . self::XML_END_LINE;
+            $isInStock = $quantity > 0;
+            if ($isInStock) {
+                $entry .= '<cs:attribute name="is_in_stock" type="text" text_search="N">' . $isInStock . '</cs:attribute>' . self::XML_END_LINE;
+            }
             $quantity = round($quantity, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
             $entry .= '<cs:attribute name="quantity_decimals" type="float">' . $quantity . '</cs:attribute>' . self::XML_END_LINE;
         }
@@ -317,13 +336,16 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         
         // <attributes_position>
         {
-            $entry .= '<cs:attribute name="position" type="int">';
-            
-            // fixme in the feature
-            // sort by "position" disabled
-            $entry .= $product->getData('position');
-            
-            $entry .= '</cs:attribute>' . self::XML_END_LINE;
+            $position = $product->getData('position');
+            if ($position) {
+                $entry .= '<cs:attribute name="position" type="int">';
+                
+                // fixme in the feature
+                // sort by "position" disabled
+                $entry .= $product->getData('position');
+                
+                $entry .= '</cs:attribute>' . self::XML_END_LINE;
+            }
         }
         // </attributes_position>
         
@@ -333,62 +355,194 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             $attributes = Mage::getResourceModel('catalog/product_attribute_collection');
             $attributes
                 ->setItemObjectClass('catalog/resource_eav_attribute')
-                ->setOrder('position', 'ASC')
+                // ->setOrder('position', 'ASC') // not need, because "order" will slow
                 ->load();
 
             if (!empty($attributes)) {
                 foreach ($attributes as $attribute) {
+                    $attributeCode = $attribute->getAttributeCode();
+                    $value = $product->getData($attributeCode);
                     $inputType = $attribute->getData('frontend_input');
-                    
-                    if ($inputType == 'price') {
-                        $entry .= '<cs:attribute name="attribute_' . $attribute->getId() . '" type="float">';
-                        $entry .= $defaultPrice;
+                    $isSearchable = $attribute->getIsSearchable();
+                    $attributeName = 'attribute_' . $attribute->getId();
+                    $attributeWeight = 0;
+
+                    if ($value == '') {
+                        // nothing
+
+                    } elseif (is_array($value) && empty($value)) {
+                        // nothing
+
+                    } elseif ($attributeCode == 'price') {
+                        // nothing
+                        // defined in the '<cs:price>' field
+
+                    } elseif ($attributeCode == 'group_price') {
+                        // nothing
+                        // fixme in the future if need
+
+                    } elseif ($attributeCode == 'short_description') {
+                        if ($isSearchable) {
+                            $attributeWeight = self::WEIGHT_SHORT_DESCRIPTION;
+                        }
+                        $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                        $entry .= '<![CDATA[' . $value . ']]>';
                         $entry .= '</cs:attribute>' . self::XML_END_LINE;
 
-                    } elseif ($inputType == 'select') {                      
-                        $value = (int) $product->getData($attribute->getAttributeCode());
-                        if (!empty($value)) {
-                            $entry .= '<cs:attribute name="attribute_' . $attribute->getId() . '" type="text">';
-                            $entry .= $value;
-                            $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                    } elseif ($attributeCode == 'description') {
+                        if ($isSearchable) {
+                            $attributeWeight = self::WEIGHT_DESCRIPTION;
                         }
+                        $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                        $entry .= '<![CDATA[' . $value . ']]>';
+                        $entry .= '</cs:attribute>' . self::XML_END_LINE;
 
-                    } elseif ($inputType == 'multiselect') {                      
-                        $str_values = '';
+                    // <meta_information>
+                        } elseif ($attributeCode == 'meta_title') {
+                            if ($isSearchable) {
+                                $attributeWeight = self::WEIGHT_META_TITLE;
+                            }
+                            $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                            $entry .= '<![CDATA[' . $value . ']]>';
+                            $entry .= '</cs:attribute>' . self::XML_END_LINE;
 
-                        $values = $product->getData($attribute->getAttributeCode());
-                        
-                        if (!empty($values)) {
-                            $arr_values = explode(',', $values);
-                            if (!empty($arr_values)) {
-                                foreach ($arr_values as $value) {
-                                    if (!empty($value)) {
-                                        $str_values .= '<value>' . $value . '</value>'; 
+                        } elseif ($attributeCode == 'meta_description') {
+                            if ($isSearchable) {
+                                $attributeWeight = self::WEIGHT_META_DESCRIPTION;
+                            }
+                            $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                            $entry .= '<![CDATA[' . $value . ']]>';
+                            $entry .= '</cs:attribute>' . self::XML_END_LINE;
+
+                        } elseif ($attributeCode == 'meta_keyword') {
+                            if ($isSearchable) {
+                                $attributeWeight = self::WEIGHT_META_KEYWORDS;
+                            }
+                            $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                            $entry .= '<![CDATA[' . $value . ']]>';
+                            $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                    // </meta_information>
+
+                    // <unused attributes>
+                        // <system_attributes>
+                        } elseif ($attributeCode == 'status') {
+                        } elseif ($attributeCode == 'visibility') {
+                        } elseif ($attributeCode == 'has_options') {
+                        } elseif ($attributeCode == 'required_options') {
+                        } elseif ($attributeCode == 'custom_layout_update') {
+                        } elseif ($attributeCode == 'tier_price') { // quantity discount
+                        } elseif ($attributeCode == 'created_at') { // date
+                        } elseif ($attributeCode == 'updated_at') { // date
+                        } elseif ($attributeCode == 'image_label') {
+                        } elseif ($attributeCode == 'small_image_label') {
+                        } elseif ($attributeCode == 'thumbnail_label') {
+                        } elseif ($attributeCode == 'url_key') { // seo name
+                        // <system_attributes>
+                    // </unused attributes>
+
+                    } elseif ($inputType == 'price') {
+                        $entry .= '<cs:attribute name="' . $attributeName .'" type="float">';
+                        $entry .= $value;
+                        $entry .= '</cs:attribute>' . self::XML_END_LINE;
+
+                    } elseif ($inputType == 'select') {
+                        // <id_value>
+                        // Example values: '0', '1', 'AF'.
+                        $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="N">';
+                        $entry .= '<![CDATA[' . $value . ']]>';
+                        $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                        // </id_value>
+
+                        // <text_value>
+                        if ($isSearchable) {
+                            $attributeWeight = self::WEIGHT_SELECT_ATTRIBUTES;
+                            $textValue = $product->getResource()->getAttribute($attributeCode)->getFrontend()->getValue($product);
+
+                            if ($textValue != '') {
+                                $entry .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                                // fixme in the future
+                                // need for fixed bug of Server
+                                $entry .= ' ';
+                                // end fixme
+                                $entry .= '<![CDATA[' . $textValue . ']]>';
+                                $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                            }
+                        }
+                        // <text_value>
+
+                    } elseif ($inputType == 'multiselect') {
+                        // <id_values>
+                        $strIdValues = '';
+                        if ($value != '') {
+                            $arrValues = explode(',', $value);
+                            if (!empty($arrValues)) {
+                                foreach ($arrValues as $v) {
+                                    if ($v != '') {
+                                        $strIdValues .= '<value>' . $v . '</value>';
                                     }
                                 }
                             }
                         }
 
-                        if ($str_values != '') {
-                            $entry .= '<cs:attribute name="attribute_' . $attribute->getId() . '" type="text">';
+                        if ($strIdValues != '') {
+                            $entry .= '<cs:attribute name="' . $attributeName .'" type="text">';
                             // fixme in the future
                             // need for fixed bug of Server
                             $entry .= ' ';
+                            // end fixme
 
-                            $entry .= $str_values;
+                            $entry .= $strIdValues;
                             $entry .= '</cs:attribute>' . self::XML_END_LINE;
                         }
+                        // </id_values>
 
-                    } elseif (($inputType == 'text') || ($inputType == 'textarea')) {
-                        $value = $product->getData($attribute->getAttributeCode());
+                        // <text_values>
+                        $strTextValues = '';
+                        if ($isSearchable) {
+                            $attributeWeight = self::WEIGHT_SELECT_ATTRIBUTES;
+                            $textValues = $product->getResource()->getAttribute($attributeCode)->getFrontend()->getValue($product);
+                            if ($textValues != '') {
+                                $arrValues = explode(',', $textValues);
+                                if (!empty($arrValues)) {
+                                    foreach ($arrValues as $v) {
+                                        if ($v != '') {
+                                            $trimValue = trim($v);
+                                            $strTextValues .= '<value><![CDATA[' . $trimValue . ']]></value>';
+                                        }
+                                    }
+                                }
+                            }
+                        }
 
-                        if ($value != '') {
-                            $entry .= '<cs:attribute name="attribute_' . $attribute->getId() . '" type="text" text_search="Y" weight="0">';
-
-                            $entry .= '<![CDATA[' . $value . ']]>'; 
-
+                        if ($strIdValues != '') {
+                            $entry .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                            // fixme in the future
+                            // need for fixed bug of Server
+                            $entry .= ' ';
+                            // end fixme
+                            $entry .= $strTextValues;
                             $entry .= '</cs:attribute>' . self::XML_END_LINE;
                         }
+                        // <text_values>
+
+                    } elseif ($inputType == 'text') {
+                        if ($isSearchable) {
+                            $attributeWeight = self::WEIGHT_TEXT_ATTRIBUTES;
+                        }
+
+                        $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                        $entry .= '<![CDATA[' . $value . ']]>';
+                        $entry .= '</cs:attribute>' . self::XML_END_LINE;
+
+                    } elseif ($inputType == 'textarea') {
+                        if ($isSearchable) {
+                            $attributeWeight = self::WEIGHT_TEXT_AREA_ATTRIBUTES;
+                        }
+
+                        $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                        $entry .= '<![CDATA[' . $value . ']]>';
+                        $entry .= '</cs:attribute>' . self::XML_END_LINE;
+
                     } else {
                         // attribute is not filtrable
                     }
@@ -413,39 +567,49 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         // </categories>
         
         // <status>
-        $entry .= '<cs:attribute name="status" type="text">' . $product->getStatus() . '</cs:attribute>' . self::XML_END_LINE;
+        $entry .= '<cs:attribute name="status" type="text" text_search="N">' . $product->getStatus() . '</cs:attribute>' . self::XML_END_LINE;
         // </status>
         
         // <visibility>
-        $entry .= '<cs:attribute name="visibility" type="text">' . $product->getData('visibility'). '</cs:attribute>' . self::XML_END_LINE;
+        $entry .= '<cs:attribute name="visibility" type="text" text_search="N">' . $product->getData('visibility'). '</cs:attribute>' . self::XML_END_LINE;
         // </visibility>
         
         // <tags>
         {
-            $str_values = '';
+            $strTagIds = '';
+            $strTagNames = '';
 
             $tags = self::getTagCollection($product, $store);
             
-            if (!empty($tags)) {
+            if ($tags) {
                 foreach ($tags as $tag) {
-                    if (!empty($tag)) {
-                        $str_values .= '<value>' . $tag->getId() . '</value>';
+                    if ($tag != '') {
+                        $strTagIds .= '<value>' . $tag->getId() . '</value>';
+                        $strTagNames .= '<value>' . $tag->getName() . '</value>';
                     }
                 }
             }
 
-            if ($str_values != '') {
-                $entry .= '<cs:attribute name="tags" type="text">';
+            if ($strTagIds != '') {
+                $entry .= '<cs:attribute name="tag_ids" type="text" text_search="N">';
                 // fixme in the future
                 // need for fixed bug of Server
                 $entry .= ' ';
+                // end fixme
+                $entry .= $strTagIds;
+                $entry .= '</cs:attribute>' . self::XML_END_LINE;
 
-                $entry .= $str_values;
+                $entry .= '<cs:attribute name="tags" type="text" text_search="Y" weight="' . self::WEIGHT_TAGS .'">';
+                // fixme in the future
+                // need for fixed bug of Server
+                $entry .= ' ';
+                // end fixme
+                $entry .= $strTagNames;
                 $entry .= '</cs:attribute>' . self::XML_END_LINE;
             }
         }
         // </tags>
-        
+
         $entry .= '</entry>' . self::XML_END_LINE;
         
         return $entry;
@@ -480,35 +644,58 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         
         return null;
     }
-    
+
+    public static function checkFacet($attribute)
+    {
+        $isFilterable         = $attribute->getIsFilterable();
+        $isFilterableInSearch = $attribute->getIsFilterableInSearch();
+        
+        return $isFilterable || $isFilterableInSearch;
+    }
+
     public static function generateFacetXMLFromFilter($filter, $store = null)
     {
-        $entry = '<entry>' . self::XML_END_LINE;
-        $entry .= '<title><![CDATA[' . $filter->getData('frontend_label') . ']]></title>' . self::XML_END_LINE;
-        $entry .= '<cs:position>' . $filter->getPosition() . '</cs:position>' . self::XML_END_LINE;
-        
-        $inputType = $filter->getData('frontend_input');
-        
-        $entry .= '<cs:attribute>attribute_' . $filter->getId() . '</cs:attribute>' . self::XML_END_LINE;
-        
-        // "Can be used only with catalog input type Dropdown, Multiple Select and Price".
-        if (($inputType == 'select') || ($inputType == 'multiselect')) {
-            $entry .= '<cs:type>select</cs:type>' . self::XML_END_LINE;
-            
-        } elseif ($inputType == 'price') {
-            $entry .= '<cs:type>dynamic</cs:type>' . self::XML_END_LINE;
-            $step = self::getPriceNavigationStep($store);
-            
-            if (!empty($step)) {
-                $entry .= '<cs:min_range>' . $step . '</cs:min_range>' . self::XML_END_LINE;
+        $entry = '';
+
+        if (self::checkFacet($filter)) {
+            $attributeType = '';
+
+            $inputType = $filter->getData('frontend_input');
+
+            // "Can be used only with catalog input type Dropdown, Multiple Select and Price".
+            if (($inputType == 'select') || ($inputType == 'multiselect')) {
+                $attributeType = '<cs:type>select</cs:type>' . self::XML_END_LINE;
+                
+            } elseif ($inputType == 'price') {
+                $attributeType = '<cs:type>dynamic</cs:type>' . self::XML_END_LINE;
+                $step = self::getPriceNavigationStep($store);
+                
+                if (!empty($step)) {
+                    $attributeType .= '<cs:min_range>' . $step . '</cs:min_range>' . self::XML_END_LINE;
+                }
+            } else {
+                // attribute is not filtrable
+                // nothing
             }
-            
-        // attribute is not filtrable
-        } else {
-            return '';
+
+            if ($attributeType != '') {
+                $entry = '<entry>' . self::XML_END_LINE;
+                $entry .= '<title><![CDATA[' . $filter->getData('frontend_label') . ']]></title>' . self::XML_END_LINE;
+                $entry .= '<cs:position>' . $filter->getPosition() . '</cs:position>' . self::XML_END_LINE;           
+
+                $attributeCode = $filter->getAttributeCode();
+
+                if ($attributeCode == 'price') {
+                    $labelAttribute = 'price';
+                } else {
+                    $labelAttribute = 'attribute_' . $filter->getId();
+                }
+                
+                $entry .= '<cs:attribute>' . $labelAttribute . '</cs:attribute>' . self::XML_END_LINE;
+                $entry .= $attributeType;
+                $entry .= '</entry>' . self::XML_END_LINE;
+            }
         }
-        
-        $entry .= '</entry>' . self::XML_END_LINE;
         
         return $entry;
     }
@@ -529,9 +716,11 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
     private static function getProducts($productIds = null, $store = null, $flagAddMinimalPrice = false, $customerGroupId = null)
     {
-        // need for generate correct url
+        // Need for generate correct url and get right products.
         if ($store) {
             Mage::app()->setCurrentStore($store->getId());
+        } else {
+            Mage::app()->setCurrentStore(0);
         }
         
         $products = Mage::getModel('catalog/product')
@@ -622,7 +811,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         $filters = Mage::getResourceModel('catalog/product_attribute_collection')
             ->setItemObjectClass('catalog/resource_eav_attribute');
 
-        if (!empty($store)) {
+        if ($store) {
             $filters->addStoreLabel($store->getId());
         }
 
@@ -653,28 +842,29 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     public static function generateFacetXMLPrices($store = null)
     {
         $entry = '';
-        $step = self::getPriceNavigationStep($store);
 
-        $entry .= '<entry>' . self::XML_END_LINE;
-        $entry .= '<title><![CDATA[Price]]></title>' . self::XML_END_LINE;
-        // not set
-        // $entry .= '<cs:position>' . 0 . '</cs:position>' . self::XML_END_LINE;
-        $entry .= '<cs:attribute>price</cs:attribute>' . self::XML_END_LINE;
-        
-        $entry .= '<cs:type>dynamic</cs:type>' . self::XML_END_LINE;
-        
-        if (!empty($step)) {
-            $entry .= '<cs:min_range>' . $step . '</cs:min_range>' . self::XML_END_LINE;
+        $filters = Mage::getResourceModel('catalog/product_attribute_collection')
+            ->setItemObjectClass('catalog/resource_eav_attribute')
+            ->addFieldToFilter('main_table.frontend_input', array('eq' => 'price'));
+
+        if ($store) {
+            $filters->addStoreLabel($store->getId());
         }
 
-        $entry .= '</entry>' . self::XML_END_LINE;
+        $filters->load();
+        
+        if (!empty($filters)) {
+            foreach ($filters as $filter) {
+                $entry .= self::generateFacetXMLFromFilter($filter, $store);
+            }
+        }
 
         return $entry;
     }
     
     public static function generateFacetXMLTags()
     {
-        return self::generateFacetXMLFromCustom('Tag', 0, 'tags', 'select');
+        return self::generateFacetXMLFromCustom('Tag', 0, 'tag_ids', 'select');
     }
     
     public static function getXMLHeader($store = null)

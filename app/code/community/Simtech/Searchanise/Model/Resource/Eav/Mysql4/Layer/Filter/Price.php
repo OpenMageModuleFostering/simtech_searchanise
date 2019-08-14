@@ -12,8 +12,8 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
 
-// [v1.6] [v1.7]
-class Simtech_Searchanise_Model_Resource_Layer_Filter_Price extends Mage_Catalog_Model_Resource_Layer_Filter_Price
+// [v1.5]
+class Simtech_Searchanise_Model_Resource_Eav_Mysql4_Layer_Filter_Price extends Mage_Catalog_Model_Resource_Eav_Mysql4_Layer_Filter_Price
 {
     public function getCount($filter, $range)
     {
@@ -31,23 +31,25 @@ class Simtech_Searchanise_Model_Resource_Layer_Filter_Price extends Mage_Catalog
             ->getSearchaniseRequest()
             ->getCountAttributePrice($filter, $range);
     }
-
+    
     /**
-     * Apply price range filter to product collection
+     * Apply attribute filter to product collection
      *
      * @param Mage_Catalog_Model_Layer_Filter_Price $filter
-     * @return Mage_Catalog_Model_Resource_Layer_Filter_Price
-    */
-    public function applyPriceRange($filter)
+     * @param int $range
+     * @param int $index    the range factor
+     * @return Mage_Catalog_Model_Resource_Eav_Mysql4_Layer_Filter_Attribute
+     */
+    public function applyFilterToCollection($filter, $range, $index)
     {
         if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-            return parent::applyPriceRange($filter);
+            return parent::applyFilterToCollection($filter, $range, $index);
         }
         
         $collection = $filter->getLayer()->getProductCollection();
         
         if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
-            return parent::applyPriceRange($filter);
+            return parent::applyFilterToCollection($filter, $range, $index);
         }
         // disable internal price filter
         

@@ -31,13 +31,11 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
         if ((empty($parentPrivateKey)) || 
             (Mage::helper('searchanise/ApiSe')->getParentPrivateKey() !== $parentPrivateKey)) {
             $_options = Mage::helper('searchanise/ApiSe')->getAddonOptions();
-            $options = array('status' => $_options['addon_status']);
-            foreach ($_options as $k => $v) {
-                if (strpos($k, 'api_key') !== false) {
-                    $options[$k] = $v;
-                }
-            }
-            
+            $options = array(
+                'status'  => $_options['addon_status'],
+                'api_key' => $_options['api_key'],
+            );
+
             if ($visual) {
                 Mage::helper('searchanise/ApiSe')->printR($options);
             } else {
@@ -67,7 +65,17 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                     $options = array();
                 }
                 $options['next_queue'] = Mage::getModel('searchanise/queue')->getNextQueue();
+                $options['total_items_in_queue'] = Mage::getModel('searchanise/queue')->getTotalItems();
+                
                 $options['type_async'] = Mage::helper('searchanise/ApiSe')->getTypeAsync();
+
+                $options['max_execution_time'] = ini_get('max_execution_time');
+                @set_time_limit(0);
+                $options['max_execution_time_after'] = ini_get('max_execution_time');
+
+                $options['ignore_user_abort'] = ini_get('ignore_user_abort');
+                @ignore_user_abort(1);
+                $options['ignore_user_abort_after'] = ini_get('ignore_user_abort_after');
 
                 if ($visual) {
                     Mage::helper('searchanise/ApiSe')->printR($options);

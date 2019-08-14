@@ -14,6 +14,35 @@
 
 class Simtech_Searchanise_Block_Product_List_Toolbar extends Mage_Catalog_Block_Product_List_Toolbar
 {
+    /**
+     * Retrieve available limits for current view mode
+     *
+     * @return array
+     */
+    public function getAvailableLimit()
+    {
+        $availableLimit = parent::getAvailableLimit();
+
+        if ($availableLimit) {
+            if (array_key_exists('all', $availableLimit)) {
+                unset($availableLimit['all']);
+                $maxPageSize = Mage::helper('searchanise/ApiSe')->getMaxPageSize();
+                if (!array_key_exists($maxPageSize, $availableLimit)) {
+                    $availableLimit[$maxPageSize] = $maxPageSize;
+                }
+
+                $currentMode = $this->getCurrentMode();
+                if (in_array($currentMode, array('list', 'grid'))) {
+                    $this->_availableLimit[$currentMode] = $availableLimit;
+                } else {
+                    $this->_defaultAvailableLimit = $availableLimit;
+                }
+            }
+        }
+
+        return $availableLimit;
+    }
+
     public function getCollectionPageSize()
     {
         if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
@@ -138,7 +167,10 @@ class Simtech_Searchanise_Block_Product_List_Toolbar extends Mage_Catalog_Block_
         $limit = (int)$this->getLimit();
         
         if ($limit) {
+            // [searchanise] 
+            // disabled limit
             //~ $this->_collection->setPageSize($limit);
+            // [/searchanise] 
         }
         
         if ($this->getCurrentOrder()) {

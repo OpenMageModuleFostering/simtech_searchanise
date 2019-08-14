@@ -15,8 +15,30 @@ require_once("Mage/CatalogSearch/controllers/ResultController.php");
 
 class Simtech_Searchanise_ResultController extends Mage_CatalogSearch_ResultController
 {
+    /**
+     * Default toolbar block name
+     *
+     * @var string
+     */
     protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
     protected $_defaultListBlock    = 'catalog/product_list';
+
+    /**
+     * Retrieve Toolbar block
+     *
+     * @return Mage_Catalog_Block_Product_List_Toolbar
+     */
+    protected function _getToolbarBlock()
+    {
+        $blockName = 'product_list_toolbar';
+        if ($blockName) {
+            if ($block = $this->getLayout()->getBlock($blockName)) {
+                return $block;
+            }
+        }
+        $block = $this->getLayout()->createBlock($this->_defaultToolbarBlock, microtime());
+        return $block;
+    }
     
     /**
      * Display search result
@@ -34,9 +56,9 @@ class Simtech_Searchanise_ResultController extends Mage_CatalogSearch_ResultCont
         
         if ($query->getQueryText()) {
             if (Mage::helper('searchanise')->checkEnabled()) {
-                $block_toolbar = $this->getLayout()->createBlock($this->_defaultToolbarBlock, microtime());
-                
-                Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::TEXT_FIND, $this, $block_toolbar, $query);
+                $blockToolbar = $this->_getToolbarBlock();
+                                
+                Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::TEXT_FIND, $this, $blockToolbar, $query);
             }
         }
         

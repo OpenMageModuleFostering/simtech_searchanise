@@ -101,19 +101,19 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         if (in_array($type, self::$_searchaniseTypes)) {
             if ($type == self::TEXT_FIND) {
                 $params['sortBy']    = 'relevance';
-                $params['sortOrder'] = 'asc';
+                $params['sortOrder'] = 'desc';
 
             } elseif ($type == self::TEXT_ADVANCED_FIND) {
                 $params['sortBy']    = 'title';
-                $params['sortOrder'] = 'asc';
+                $params['sortOrder'] = 'desc';
 
             } elseif ($type == self::VIEW_CATEGORY) {
                 $params['sortBy']    = 'position';
-                $params['sortOrder'] = 'asc';
+                $params['sortOrder'] = 'desc';
 
             } elseif ($type == self::VIEW_TAG) {
                 $params['sortBy']    = 'title';
-                $params['sortOrder'] = 'asc';
+                $params['sortOrder'] = 'desc';
             }
 
             if (empty($params['restrictBy'])) {
@@ -140,9 +140,9 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         return Mage::getUrl('*/*/*', array('_current'=>true, '_use_rewrite'=>true, '_query'=>$query));
     }
     
-    public function execute($type = null, $controller = null, $block_toolbar = null, $data = null)
+    public function execute($type = null, $controller = null, $blockToolbar = null, $data = null)
     {
-        if (!$this->checkEnabled()) {
+        if ((!$this->checkEnabled()) || (!Mage::helper('searchanise/ApiSe')->getEnabledSearchaniseSearch())) {
             return;
         }
         
@@ -154,7 +154,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         if (empty($params)) {
             $params = array();
         }
-        
+
         // Set default value.
         $this->setDefaultSort($params, $type);
 
@@ -171,8 +171,8 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         if (in_array($type, self::$_searchaniseTypes)) {
             if ($type == self::TEXT_FIND) {
                 $params['q'] = Mage::helper('catalogsearch')->getQueryText();
-                if ($params['q']) {
-                    $params['q'] = trim($params['q']);
+                if ($params['q'] != '') {
+                    $params['q'] = strtolower(trim($params['q']));
                 }
 
                 $params['facets']                = 'true';
@@ -218,8 +218,8 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             }
         }
         
-        if ((!empty($controller)) && (!empty($block_toolbar))) {
-            if ($availableOrders = $block_toolbar->getAvailableOrders()) {
+        if ((!empty($controller)) && (!empty($blockToolbar))) {
+            if ($availableOrders = $blockToolbar->getAvailableOrders()) {
                 if (in_array($type, self::$_searchaniseTypes)) {
                     if ($type == self::TEXT_FIND) {
                         unset($availableOrders['position']);
@@ -229,25 +229,29 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                             $availableOrders
                         );
                         
-                        $block_toolbar->setAvailableOrders($availableOrders);
+                        $blockToolbar->setAvailableOrders($availableOrders);
                     } elseif ($type == self::TEXT_ADVANCED_FIND) {
                         unset($availableOrders['position']);
-                        $block_toolbar->setAvailableOrders($availableOrders);
+                        $blockToolbar->setAvailableOrders($availableOrders);
 
                     } elseif ($type == self::VIEW_TAG) {
                         unset($availableOrders['position']);
                         
-                        $block_toolbar->setAvailableOrders($availableOrders);
+                        $blockToolbar->setAvailableOrders($availableOrders);
                     }
                 }
             }
-            
-            $sort_by = $block_toolbar->getCurrentOrder();
-            $sort_order = $block_toolbar->getCurrentDirection();
-            
-            $max_results = (int) $block_toolbar->getLimit();
+
+            if (isset($params['sortOrder'])) {
+                // need for fix error (when runing first search)
+                $blockToolbar->setDefaultDirection($params['sortOrder']);
+            }
+            $sortBy = $blockToolbar->getCurrentOrder();
+            $sortOrder = $blockToolbar->getCurrentDirection();
+
+            $max_results = (int) $blockToolbar->getLimit();
             $start_index = 0;
-            $cur_page = (int) $block_toolbar->getCurrentPage();
+            $cur_page = (int) $blockToolbar->getCurrentPage();
             $start_index = $cur_page > 1 ? ($cur_page - 1) * $max_results : 0;
             
             if ($max_results) {
@@ -257,16 +261,16 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                 $params['startIndex'] = $start_index;
             }
             
-            if ($sort_by) {
-                if ($sort_by == 'name') {
+            if ($sortBy) {
+                if ($sortBy == 'name') {
                     $params['sortBy'] = 'title';
                 } else {
-                    $params['sortBy'] = $sort_by;
+                    $params['sortBy'] = $sortBy;
                 }
             }
             
-            if ($sort_order) {
-                $params['sortOrder'] = $sort_order;
+            if ($sortOrder) {
+                $params['sortOrder'] = $sortOrder;
             }
         }
         
@@ -276,13 +280,13 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         if (!empty($controller)) {
             // CATEGORIES
             {
-                $arr_cat = null;
+                $arrCat = null;
                 
                 if ((in_array($type, self::$_searchaniseTypes)) && ($type != self::VIEW_TAG)) {
                     $cat_id = (int) $controller->getRequest()->getParam('cat');
                     if (!empty($cat_id)) {
-                        $arr_cat = array();
-                        $arr_cat[] = $cat_id; // need if not exist children categories
+                        $arrCat = array();
+                        $arrCat[] = $cat_id; // need if not exist children categories
                         
                         $categories = Mage::getModel('catalog/category')
                             ->getCollection()
@@ -294,21 +298,21 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                         if (!empty($categories)) {
                             foreach ($categories as $cat) {
                                 if (!empty($cat)) {
-                                    $arr_cat = $cat->getAllChildren(true);
+                                    $arrCat = $cat->getAllChildren(true);
                                 }
                             }
                         }
                     } elseif (($type == self::VIEW_CATEGORY) && (!empty($data))) {
                         // data = category
-                        $arr_cat = $data->getAllChildren(true);
+                        $arrCat = $data->getAllChildren(true);
                     }
                 }
                 
-                if (!empty($arr_cat)) {
-                    if (is_array($arr_cat)) {
-                        $params['restrictBy']['categories'] = implode('|', $arr_cat);
+                if (!empty($arrCat)) {
+                    if (is_array($arrCat)) {
+                        $params['restrictBy']['categories'] = implode('|', $arrCat);
                     } else {
-                        $params['restrictBy']['categories'] = $arr_cat;
+                        $params['restrictBy']['categories'] = $arrCat;
                     }
                 }
             }
@@ -326,26 +330,26 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                     }
                     
                     if (!empty($arrAttributes)) {
-                        $req_params = $controller->getRequest()->getParams();
+                        $requestParams = $controller->getRequest()->getParams();
                         
-                        if (!empty($req_params)) {
-                            foreach ($req_params as $name => $val) {
+                        if (!empty($requestParams)) {
+                            foreach ($requestParams as $name => $val) {
                                 $id = array_search($name, $arrAttributes);
                                 if (($name) && ($id)) {
-                                    // hook, need for 'union'
+                                    $labelAttribute = 'attribute_' . $id;
+
                                     if ($name == 'price') {
                                         $valPrice = Mage::helper('searchanise/ApiSe')->getPriceValueFromRequest($val);
                                         if ($valPrice != '') {
                                             $params['restrictBy']['price'] = $valPrice;
                                         }
-                                        continue;
-                                    }
 
-                                    if ($arrInputType[$id] == 'price') {
+                                    } elseif ($arrInputType[$id] == 'price') {
+                                        $params['union'][$labelAttribute]['min'] = Mage::helper('searchanise/ApiSe')->getCurLabelForPricesUsergroup();
                                         $valPrice = Mage::helper('searchanise/ApiSe')->getPriceValueFromRequest($val);
                                         
                                         if ($valPrice != '') {
-                                            $params['restrictBy']['attribute_' . $id] = $valPrice;
+                                            $params['restrictBy'][$labelAttribute] = $valPrice;
                                         }
                                         
                                     } elseif (($arrInputType[$id] == 'text') || ($arrInputType[$id] == 'textarea')) {
@@ -353,7 +357,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                                             $val = Mage::helper('searchanise/ApiSe')->escapingCharacters($val);
 
                                             if ($val != '') {
-                                                $params['queryBy']['attribute_' . $id] = $val;
+                                                $params['queryBy'][$labelAttribute] = $val;
                                             }
                                         }
 
@@ -362,9 +366,9 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                                               ($arrInputType[$id] == 'boolean')) {
                                         if ($val) {
                                             if (is_array($val)) {
-                                                $params['restrictBy']['attribute_' . $id] = implode('|', $val);
+                                                $params['restrictBy'][$labelAttribute] = implode('|', $val);
                                             } else {
-                                                $params['restrictBy']['attribute_' . $id] = $val;
+                                                $params['restrictBy'][$labelAttribute] = $val;
                                             }
                                         }
 
@@ -381,16 +385,22 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             if ((in_array($type, self::$_searchaniseTypes)) && ($type == self::VIEW_TAG)) {
                 if ($data) {
                     // data = tag
-                    $params['restrictBy']['tags'] = $data->getId();
+                    $params['restrictBy']['tag_ids'] = $data->getId();
                 }
             }
         }
 
         // need for other sort_by
         if (!empty($arrAttributes)) {
-            $id = array_search($params['sortBy'], $arrAttributes);
-            if (!empty($id)) {
-                $params['sortBy'] = 'attribute_' . $id;
+            if ($params['sortBy'] == 'price') {
+                // nothing
+                // defined in the '<cs:price>' field
+
+            } else {
+                $id = array_search($params['sortBy'], $arrAttributes);
+                if (!empty($id)) {
+                    $params['sortBy'] = 'attribute_' . $id;
+                }
             }
         }
 

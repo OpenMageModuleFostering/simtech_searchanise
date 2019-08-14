@@ -139,34 +139,34 @@
         <models>
             <!-- OVERRIDE CATALOG MODEL -->
             <!-- [disabled_searchanise_search] -->
-            <catalog>
+            <!-- <catalog>
                 <rewrite>
                     <layer>Simtech_Searchanise_Model_Layer</layer>
                     <layer_filter_category>Simtech_Searchanise_Model_Layer_Filter_Category</layer_filter_category>
                     <layer_filter_price>Simtech_Searchanise_Model_Layer_Filter_Price</layer_filter_price>
                 </rewrite>
-            </catalog>
+            </catalog> -->
             <!-- [/disabled_searchanise_search] -->
             <!-- END -->
 
             <!-- <OVERRIDE CATALOG RESOURCE> -->
             <!-- [disabled_searchanise_search] -->
             <!-- [v1.6] [v1.7] -->
-            <catalog_resource>
+            <!-- <catalog_resource>
                 <rewrite>
                     <product_collection>Simtech_Searchanise_Model_Resource_Product_Collection</product_collection>
                     <layer_filter_attribute>Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute</layer_filter_attribute>
                     <layer_filter_price>Simtech_Searchanise_Model_Resource_Layer_Filter_Price</layer_filter_price>
                 </rewrite>
-            </catalog_resource>
+            </catalog_resource> -->
             <!-- [/v1.6] [/v1.7] -->
             <!-- [v1.5] -->
-            <catalog_resource_eav_mysql4>
+            <!-- <catalog_resource_eav_mysql4>
                 <rewrite>
                     <layer_filter_attribute>Simtech_Searchanise_Model_Resource_Eav_Mysql4_Layer_Filter_Attribute</layer_filter_attribute>
                     <layer_filter_price>Simtech_Searchanise_Model_Resource_Eav_Mysql4_Layer_Filter_Price</layer_filter_price>
                 </rewrite>
-            </catalog_resource_eav_mysql4>
+            </catalog_resource_eav_mysql4> -->
             <!-- [/v1.5] -->
             <!-- [/disabled_searchanise_search] -->
 
@@ -180,32 +180,32 @@
             <!-- END -->
             <!-- OVERRIDE CATALOGSEARCH MODEL -->
             <!-- [disabled_searchanise_search] -->
-            <catalogsearch>
+            <!-- <catalogsearch>
                 <rewrite>
                     <layer>Simtech_Searchanise_Model_LayerCatalogSearch</layer>
                     <advanced>Simtech_Searchanise_Model_Advanced</advanced>
                 </rewrite>
-            </catalogsearch>
+            </catalogsearch> -->
             <!-- [/disabled_searchanise_search] -->
             <!-- END -->
 
             <!-- <OVERRIDE CATALOGSEARCH RESOURCE> -->
             <!-- [disabled_searchanise_search] -->
             <!-- [v1.6] [v1.7] -->
-            <catalogsearch_resource>
+            <!-- <catalogsearch_resource>
                 <rewrite>
                     <fulltext_collection>Simtech_Searchanise_Model_Resource_Fulltext_Collection</fulltext_collection>
                     <advanced_collection>Simtech_Searchanise_Model_Resource_Advanced_Collection</advanced_collection>
                 </rewrite>
-            </catalogsearch_resource>
+            </catalogsearch_resource> -->
             <!-- [/v1.6] [/v1.7] -->
             <!-- [v1.5] -->
-            <catalogsearch_mysql4>
+            <!-- <catalogsearch_mysql4>
                 <rewrite>
                     <fulltext_collection>Simtech_Searchanise_Model_Mysql4_Fulltext_Collection</fulltext_collection>
                     <advanced_collection>Simtech_Searchanise_Model_Mysql4_Advanced_Collection</advanced_collection>
                 </rewrite>
-            </catalogsearch_mysql4>
+            </catalogsearch_mysql4> -->
             <!-- [/v1.5] -->
             <!-- [/disabled_searchanise_search] -->
             <!-- END -->

@@ -90,7 +90,22 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
         
         return true;
     }
-    
+
+    public function getTotalItems()
+    {
+        $total = 0;
+
+        $collection = $this->getCollection()
+            ->setPageSize(0)
+            ->load();
+
+        if ($collection) {
+            $total = count($collection);
+        }
+
+        return $total;
+    }
+
     public function getNextQueueArray($queueId = null, $flagIgnoreError = false)
     {
         $collection = $this->getCollection()

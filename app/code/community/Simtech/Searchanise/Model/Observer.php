@@ -546,9 +546,7 @@ class Simtech_Searchanise_Model_Observer
         $attribute = $observer->getEvent()->getAttribute();
         
         if ($attribute && $attribute->getId()) {
-            $isFilterable         = $attribute->getData('is_filterable');
-            $isFilterableInSearch = $attribute->getData('is_filterable_in_search');
-            $flFacet = ($isFilterable) || ($isFilterableInSearch);
+            $flFacet = Mage::helper('searchanise/ApiXML')->checkFacet($attribute);
             
             $flFacetOld = null;
             
@@ -556,10 +554,7 @@ class Simtech_Searchanise_Model_Observer
                 ->load($attribute->getId());
             
             if (!empty($attributeOld)) {
-                $isFilterableOld         = $attributeOld->getData('is_filterable');
-                $isFilterableInSearchOld = $attributeOld->getData('is_filterable_in_search');
-                
-                $flFacetOld = ($isFilterableOld) || ($isFilterableInSearchOld);
+                $flFacetOld = Mage::helper('searchanise/ApiXML')->checkFacet($attributeOld);
             }
             
             if ($flFacet != $flFacetOld) {
@@ -597,9 +592,8 @@ class Simtech_Searchanise_Model_Observer
             if ((!empty(self::$newAttributes)) && 
                 (array_key_exists($attributeCode, self::$newAttributes)) && 
                 (self::$newAttributes[$attributeCode])) {
-                $isFilterable         = $attribute->getData('is_filterable');
-                $isFilterableInSearch = $attribute->getData('is_filterable_in_search');
-                $flFacet = ($isFilterable) || ($isFilterableInSearch);
+                $flFacet = Mage::helper('searchanise/ApiXML')->checkFacet($attribute);
+
                 
                 if ($flFacet) {
                     Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE, $attribute->getId());
@@ -621,9 +615,7 @@ class Simtech_Searchanise_Model_Observer
         $attribute = $observer->getEvent()->getAttribute();
         
         if ($attribute && $attribute->getId()) {
-            $isFilterable         = $attribute->getData('is_filterable');
-            $isFilterableInSearch = $attribute->getData('is_filterable_in_search');
-            $flFacet = ($isFilterable) || ($isFilterableInSearch);
+            $flFacet = Mage::helper('searchanise/ApiXML')->checkFacet($attribute);
             
             if ($flFacet) {
                 Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_FACET_DELETE, $attribute->getId());
