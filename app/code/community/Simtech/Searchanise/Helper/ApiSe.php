@@ -205,6 +205,18 @@ class Simtech_Searchanise_Helper_ApiSe
         return self::getSetting('use_navigation', self::CONFIG_PREFIX);
     }
 
+    public static function setUseFullFeed($value = null)
+    {
+        self::setSetting('use_full_feed', $value, self::CONFIG_PREFIX);
+        
+        return true;
+    }
+
+    public static function getUseFullFeed($value = null)
+    {
+        return self::getSetting('use_full_feed', self::CONFIG_PREFIX);
+    }
+
     public static function setLastRequest($value = null)
     {
         self::setSetting('last_request', $value, self::CONFIG_PREFIX);
@@ -1140,7 +1152,6 @@ class Simtech_Searchanise_Helper_ApiSe
                 }
                 
                 self::setExportStatus(self::EXPORT_STATUS_NONE, $store);
-                self::setUseNavigation(true);
             }
         }
 
@@ -1718,8 +1729,6 @@ class Simtech_Searchanise_Helper_ApiSe
                 self::setApiKey(null, $store);
                 self::setPrivateKey(null, $store);
                 self::setExportStatus(null, $store);
-
-                self::setUseNavigation(true, $store);
                 
                 Mage::getModel('searchanise/queue')->deleteKeys($store);
             }

@@ -14,6 +14,7 @@
 class Simtech_Searchanise_OptionsController extends Mage_Adminhtml_Controller_Action
 {
     const PARAM_USE_NAVIGATION = 'snize_use_navigation';
+    const PARAM_USE_FULL_FEED  = 'snize_use_full_feed';
     
     /*
      * options
@@ -21,8 +22,15 @@ class Simtech_Searchanise_OptionsController extends Mage_Adminhtml_Controller_Ac
     public function indexAction()
     {
         $useNavigation = $this->getRequest()->getParam(self::PARAM_USE_NAVIGATION);
-        Mage::helper('searchanise/ApiSe')->setUseNavigation($useNavigation == 'true' ? true : false);
+        if ($useNavigation != '') {
+            Mage::helper('searchanise/ApiSe')->setUseNavigation($useNavigation == 'true' ? true : false);
+        }
 
+        $useFullFeed = $this->getRequest()->getParam(self::PARAM_USE_FULL_FEED);
+        if ($useFullFeed != '') {
+            Mage::helper('searchanise/ApiSe')->setUseFullFeed($useFullFeed == 'true' ? true : false);
+        }
+        
         exit;
     }
 }

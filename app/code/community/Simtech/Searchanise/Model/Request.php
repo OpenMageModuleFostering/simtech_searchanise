@@ -330,6 +330,8 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
                 Mage::helper('searchanise/ApiSe')->queueImport($this->getStore(), false);
             } elseif ($result['error'] == 'NAVIGATION_DISABLED') {
                 Mage::helper('searchanise/ApiSe')->setUseNavigation(false);
+            } elseif ($result['error'] == 'FULL_FEED_DISABLED') {
+                Mage::helper('searchanise/ApiSe')->setUseFullFeed(false);
             }
 
             Mage::helper('searchanise/ApiSe')->log($result['error']);
@@ -540,7 +542,7 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
                 Mage::helper('searchanise/ApiSe')->getAllChildrenCategories($arr_cat, $category);
                 
                 foreach ($res['facets'] as $facet) {
-                    if ($facet['attribute'] == 'categories') {
+                    if ($facet['attribute'] == 'category_ids') {
                         if (!empty($facet['buckets'])) {
                             foreach ($facet['buckets'] as $bucket) {
                                 if (in_array($bucket['value'], $arr_cat)) {

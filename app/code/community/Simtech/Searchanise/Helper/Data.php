@@ -359,9 +359,9 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                 
                 if (!empty($arrCat)) {
                     if (is_array($arrCat)) {
-                        $params['restrictBy']['categories'] = implode('|', $arrCat);
+                        $params['restrictBy']['category_ids'] = implode('|', $arrCat);
                     } else {
-                        $params['restrictBy']['categories'] = $arrCat;
+                        $params['restrictBy']['category_ids'] = $arrCat;
                     }
                 }
             }
@@ -384,7 +384,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                         if (!empty($requestParams)) {
                             foreach ($requestParams as $name => $val) {
                                 $id = array_search($name, $arrAttributes);
-                                if (($name) && ($id)) {
+                                if ($name && $id) {
                                     $labelAttribute = 'attribute_' . $id;
 
                                     if ($name == 'price') {
@@ -406,7 +406,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                                             $val = Mage::helper('searchanise/ApiSe')->escapingCharacters($val);
 
                                             if ($val != '') {
-                                                $params['queryBy'][$labelAttribute] = $val;
+                                                $params['queryBy'][$arrAttributes[$id]] = $val;
                                             }
                                         }
 

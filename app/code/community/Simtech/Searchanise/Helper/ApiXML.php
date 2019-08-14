@@ -31,6 +31,9 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     const WEIGHT_TEXT_AREA_ATTRIBUTES = 40;
     // </if_isSearchable>
 
+    // Tweaks
+    const ADDITIONAL_CHECK_FOR_INCORRECT_PRODUCTS = true;
+
     protected static $flWithoutTags = false;
     
     public static function getStockItem($product, $store = null)
@@ -233,17 +236,58 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
      */
     private static function getProductMinimalPrice($product, $store, $flagWithChildrenProducts = true, $customerGroupId = null, $groupPrice = null)
     {
-        $minimalPrice = '';
+        $minimalPrice = false;
 
         if ($customerGroupId != null) {
             $product->setCustomerGroupId($customerGroupId);
         }
 
-        if ($groupPrice == null) {
-            $minimalPrice = $product->getFinalPrice();
-        } else {
+        if ($groupPrice != null) {
             $minimalPrice = $groupPrice;
+        } else {
+            $isCorrectProduct = true;
+
+            // Additional check for incorrect configurable products.
+            if (self::ADDITIONAL_CHECK_FOR_INCORRECT_PRODUCTS) {
+                static $arrIncorrectProductIds = array();
+
+                if (in_array($product->getId(), $arrIncorrectProductIds)) {
+                    $isCorrectProduct = false;
+                }
+
+                if ($isCorrectProduct && $product->isConfigurable()) {
+                    try {
+                        $attributes = $product->getTypeInstance(true)
+                            ->getConfigurableAttributes($product);
+                        foreach ($attributes as $attribute) {
+                            if (!$attribute->getProductAttribute()) {
+                                $isCorrectProduct = false;
+                                $arrIncorrectProductIds[] = $product->getId();
+                                Mage::helper('searchanise/ApiSe')->log('Incorrect configurable product ID = ' . $product->getId(), 'Warning');
+                                break;
+                            }
+                        }
+                    } catch (Exception $e) {
+                        Mage::helper('searchanise/ApiSe')->log($e->getMessage(), "Error: Script couldn't check for incorrect configurable product ID = " . $product->getId());
+                    }
+                }
+            }
+            // end check
+
+            if ($isCorrectProduct) {
+                try {
+                    $minimalPrice = $product->getFinalPrice();
+                } catch (Exception $e) {
+                    $minimalPrice = false;
+                    Mage::helper('searchanise/ApiSe')->log($e->getMessage(), "Error: Script couldn't get final price for product ID = " . $product->getId());
+                }
+            }
         }
+
+        if ($minimalPrice === false) {
+            $minimalPrice = $product->getPrice();
+        }
+
         $minimalPrice = self::getProductShowPrice($product, $minimalPrice);
         
         if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
@@ -419,6 +463,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 $unitedProducts[] = $childrenProduct;
             }
         }
+        $useFullFeed = Mage::helper('searchanise/ApiSe')->getUseFullFeed();
         $entry .= '<entry>' . self::XML_END_LINE;
         $entry .= '<id>' . $product->getId() . '</id>' . self::XML_END_LINE;
         
@@ -517,7 +562,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                     $attributeCode = $attribute->getAttributeCode();
                     $value = $product->getData($attributeCode);
 
-                    // unitedValues - childrens values + main value
+                    // unitedValues - main value + childrens values
                     $unitedValues = array();
                     {
                         if ($value == '') {
@@ -544,15 +589,53 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                     }
                     $inputType = $attribute->getData('frontend_input');
                     $isSearchable = $attribute->getIsSearchable();
+                    $isVisibleInAdvancedSearch = $attribute->getIsVisibleInAdvancedSearch();
+                    $usedForSortBy = $attribute->getUsedForSortBy();
                     $attributeName = 'attribute_' . $attribute->getId();
                     $attributeWeight = 0;
+                    $isRequireAttribute = $useFullFeed || $isSearchable || $isVisibleInAdvancedSearch || $usedForSortBy;
 
                     if (empty($unitedValues)) {
                         // nothing
 
-                    } elseif ($attributeCode == 'price') {
-                        // nothing
-                        // already defined in the '<cs:price>' field
+                    // <system_attributes>
+                        } elseif ($attributeCode == 'price') {
+                            // already defined in the '<cs:price>' field
+
+                        } elseif ($attributeCode == 'status' || $attributeCode == 'visibility') {
+                            $entry .= '<cs:attribute name="' . $attributeCode . '" type="text" text_search="N">';
+                            $entry .= $value;
+                            $entry .= '</cs:attribute>' . self::XML_END_LINE;
+
+                        } elseif ($attributeCode == 'weight') {
+                            $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode);
+                            if ($strTextValues != '') {
+                                $entry .= '<cs:attribute name="' . $attributeCode . '" type="float" text_search="N">';
+                                // fixme in the future
+                                // need for fixed bug of Server
+                                $entry .= ' ';
+                                // end fixme
+                                $entry .= $strTextValues;
+                                $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                            }
+
+                        // <dates>
+                        } elseif ($attributeCode == 'created_at' || $attributeCode == 'updated_at') {
+                            $dateTimestamp = Mage::getModel('core/date')->timestamp(strtotime($value));
+                            $entry .= '<cs:attribute name="' . $attributeCode .'" type="int" text_search="N">';
+                            $entry .= $dateTimestamp;
+                            $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                        // </dates>
+
+                        } elseif ($attributeCode == 'has_options') {
+                        } elseif ($attributeCode == 'required_options') {
+                        } elseif ($attributeCode == 'custom_layout_update') {
+                        } elseif ($attributeCode == 'tier_price') { // quantity discount
+                        } elseif ($attributeCode == 'image_label') {
+                        } elseif ($attributeCode == 'small_image_label') {
+                        } elseif ($attributeCode == 'thumbnail_label') {
+                        } elseif ($attributeCode == 'url_key') { // seo name
+                    // <system_attributes>
 
                     } elseif ($attributeCode == 'group_price') {
                         // nothing
@@ -565,67 +648,42 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                         $attributeCode == 'meta_description' || 
                         $attributeCode == 'meta_keyword') {
 
-                        if ($isSearchable) {
-                            // <descriptions>
-                                if ($inputType == 'short_description') {
-                                    $attributeWeight = self::WEIGHT_SHORT_DESCRIPTION;
-                                } elseif ($inputType == 'description') {
-                                    $attributeWeight = self::WEIGHT_DESCRIPTION;
-                            // </descriptions>
+                        if ($isRequireAttribute) {
+                            if ($isSearchable) {
+                                // <descriptions>
+                                    if ($inputType == 'short_description') {
+                                        $attributeWeight = self::WEIGHT_SHORT_DESCRIPTION;
+                                    } elseif ($inputType == 'description') {
+                                        $attributeWeight = self::WEIGHT_DESCRIPTION;
+                                // </descriptions>
 
-                            // <meta_information>
-                                } elseif ($inputType == 'meta_title') {
-                                    $attributeWeight = self::WEIGHT_META_TITLE;
-                                } elseif ($inputType == 'meta_description') {
-                                    $attributeWeight = self::WEIGHT_META_DESCRIPTION;
-                                } elseif ($inputType == 'meta_keyword') {
-                                    $attributeWeight = self::WEIGHT_META_KEYWORDS;
-                            // </meta_information>
-                            } else {
-                                // Nothing.
+                                // <meta_information>
+                                    } elseif ($inputType == 'meta_title') {
+                                        $attributeWeight = self::WEIGHT_META_TITLE;
+                                    } elseif ($inputType == 'meta_description') {
+                                        $attributeWeight = self::WEIGHT_META_DESCRIPTION;
+                                    } elseif ($inputType == 'meta_keyword') {
+                                        $attributeWeight = self::WEIGHT_META_KEYWORDS;
+                                // </meta_information>
+                                } else {
+                                    // Nothing.
+                                }
+                            }
+
+                            $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode);
+                            if ($strTextValues != '') {
+                                $entry .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                                // fixme in the future
+                                // need for fixed bug of Server
+                                $entry .= ' ';
+                                // end fixme
+                                $entry .= $strTextValues;
+                                $entry .= '</cs:attribute>' . self::XML_END_LINE;
                             }
                         }
 
-                        $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode);
-                        if ($strTextValues != '') {
-                            $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                            // fixme in the future
-                            // need for fixed bug of Server
-                            $entry .= ' ';
-                            // end fixme
-                            $entry .= $strTextValues;
-                            $entry .= '</cs:attribute>' . self::XML_END_LINE;
-                        }
-
-                    // <dates>
-                    // It can be used for sort.
-                    } elseif ($attributeCode == 'created_at' || $attributeCode == 'updated_at') {
-                        // Fixme in the future
-                        // may add check for used_for_sort_by
-                        $dateTimestamp = Mage::getModel('core/date')->timestamp(strtotime($value));
-                        $entry .= '<cs:attribute name="' . $attributeName .'" type="int" text_search="N">';
-                        $entry .= $dateTimestamp;
-                        $entry .= '</cs:attribute>' . self::XML_END_LINE;
-                    // Fixme in the future
-                    // Need add other date attributes ('look for' by type)
-                    // </dates>
-
-                    // <unused attributes>
-                        // <system_attributes>
-                        } elseif ($attributeCode == 'status') {
-                        } elseif ($attributeCode == 'visibility') {
-                        } elseif ($attributeCode == 'has_options') {
-                        } elseif ($attributeCode == 'required_options') {
-                        } elseif ($attributeCode == 'custom_layout_update') {
-                        } elseif ($attributeCode == 'tier_price') { // quantity discount
-                        } elseif ($attributeCode == 'image_label') {
-                        } elseif ($attributeCode == 'small_image_label') {
-                        } elseif ($attributeCode == 'thumbnail_label') {
-                        } elseif ($attributeCode == 'url_key') { // seo name
-                        // <system_attributes>
-                    // </unused attributes>
-
                     } elseif ($inputType == 'price') {
+                        // Other attributes with type 'price'.
                         $entry .= '<cs:attribute name="' . $attributeName .'" type="float">';
                         $entry .= $value;
                         $entry .= '</cs:attribute>' . self::XML_END_LINE;
@@ -645,46 +703,61 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                         // </id_values>
 
                         // <text_values>
-                        $strTextValues = '';
-                        if ($isSearchable) {
-                            $attributeWeight = self::WEIGHT_SELECT_ATTRIBUTES;
+                        if ($isRequireAttribute) {
                             $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode);
-                        }
 
-                        if ($strTextValues != '') {
-                            $entry .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                            // fixme in the future
-                            // need for fixed bug of Server
-                            $entry .= ' ';
-                            // end fixme
-                            $entry .= $strTextValues;
-                            $entry .= '</cs:attribute>' . self::XML_END_LINE;
-                        }
-                        // <text_values>
+                            if ($strTextValues != '') {
+                                if ($isSearchable) {
+                                    $attributeWeight = self::WEIGHT_SELECT_ATTRIBUTES;
+                                }
 
-                    } elseif ($inputType == 'text' || $inputType == 'textarea') {
-                        if ($isSearchable) {
-                            if ($inputType == 'text') {
-                                $attributeWeight = self::WEIGHT_TEXT_ATTRIBUTES;
-                            } elseif ($inputType == 'textarea') {
-                                $attributeWeight = self::WEIGHT_TEXT_AREA_ATTRIBUTES;
-                            } else {
-                                // Nothing.
+                                $entry .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                                // fixme in the future
+                                // need for fixed bug of Server
+                                $entry .= ' ';
+                                // end fixme
+                                $entry .= $strTextValues;
+                                $entry .= '</cs:attribute>' . self::XML_END_LINE;
                             }
                         }
-                        $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode);
-                        if ($strTextValues != '') {
-                            $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                            // fixme in the future
-                            // need for fixed bug of Server
-                            $entry .= ' ';
-                            // end fixme
-                            $entry .= $strTextValues;
+                        // </text_values>
+
+                    } elseif ($inputType == 'text' || $inputType == 'textarea') {
+                        if ($isRequireAttribute) {
+                            $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode);
+
+                            if ($strTextValues != '') {
+                                if ($isSearchable) {
+                                    if ($inputType == 'text') {
+                                        $attributeWeight = self::WEIGHT_TEXT_ATTRIBUTES;
+                                    } elseif ($inputType == 'textarea') {
+                                        $attributeWeight = self::WEIGHT_TEXT_AREA_ATTRIBUTES;
+                                    } else {
+                                        // Nothing.
+                                    }
+                                }
+                                $entry .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
+                                // fixme in the future
+                                // need for fixed bug of Server
+                                $entry .= ' ';
+                                // end fixme
+                                $entry .= $strTextValues;
+                                $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                            }
+                        }
+                    } elseif ($inputType == 'date') {
+                        if ($isRequireAttribute) {
+                            $dateTimestamp = Mage::getModel('core/date')->timestamp(strtotime($value));
+                            $entry .= '<cs:attribute name="' . $attributeCode .'" type="int" text_search="N">';
+                            $entry .= $dateTimestamp;
                             $entry .= '</cs:attribute>' . self::XML_END_LINE;
                         }
-
+                    } elseif ($inputType == 'media_image') {
+                        // Nothing.
+                    } elseif ($inputType == 'gallery') {
+                        // Nothing.
                     } else {
-                        // attribute is not filtrable
+                        // Attribute not will use.
                     }
                 }
             }
@@ -693,27 +766,33 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         
         // <categories>
         {
-            $entry .= '<cs:attribute name="categories" type="text">';
-            // need, it's important
+            $entry .= '<cs:attribute name="category_ids" type="text">';
+            // fixme in the future
+            // need for fixed bug of Server
             $entry .= ' ';
+            $nameCategories = ' ';
+            // end fixme
             $categoryIds = $product->getCategoryIds();
             if (!empty($categoryIds)) {
                 foreach ($categoryIds as $catKey => $categoryId) {
                     $entry .= '<value><![CDATA[' . $categoryId . ']]></value>';
+                    $category = Mage::getModel('catalog/category')->load($categoryId);
+                    if ($category) {
+                        $nameCategories .= '<value><![CDATA[' . $category->getName() . ']]></value>';
+                    }
                 }
             }
             $entry .= '</cs:attribute>' . self::XML_END_LINE;
+
+            if ($nameCategories != ' ') {
+                $attributeWeight = 0;
+                $entry .= '<cs:attribute name="categories" type="text" text_search="N" weight="' . $attributeWeight . '">';
+                $entry .= $nameCategories;
+                $entry .= '</cs:attribute>' . self::XML_END_LINE;
+            }
         }
         // </categories>
-        
-        // <status>
-        $entry .= '<cs:attribute name="status" type="text" text_search="N">' . $product->getStatus() . '</cs:attribute>' . self::XML_END_LINE;
-        // </status>
-        
-        // <visibility>
-        $entry .= '<cs:attribute name="visibility" type="text" text_search="N">' . $product->getData('visibility'). '</cs:attribute>' . self::XML_END_LINE;
-        // </visibility>
-        
+
         // <tags>
         {
             $strTagIds = '';
@@ -1079,7 +1158,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     
     public static function generateFacetXMLCategories()
     {
-        return self::generateFacetXMLFromCustom('Category', 0, 'categories', 'select');
+        return self::generateFacetXMLFromCustom('Category', 0, 'category_ids', 'select');
     }
 
     public static function generateFacetXMLPrices($store = null)

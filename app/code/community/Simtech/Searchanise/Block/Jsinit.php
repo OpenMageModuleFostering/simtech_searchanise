@@ -82,12 +82,13 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
                 Searchanise.AdditionalSearchInputs = '#name,#description,#sku';
 
                 Searchanise.options.PriceFormat = {
-                    rate :               '{$priceFormat['rate']}',
-                    decimals:            '{$priceFormat['decimals']}',
-                    decimals_separator:  '{$priceFormat['decimals_separator']}',
-                    thousands_separator: '{$priceFormat['thousands_separator']}',
-                    symbol:              '{$priceFormat['symbol']}',
-                    after:                {$priceFormat['after']}
+                    decimals_separator:  '" . addslashes($priceFormat['decimals_separator']) . "',
+                    thousands_separator: '" . addslashes($priceFormat['thousands_separator']) . "',
+                    symbol:              '" . addslashes($priceFormat['symbol']) . "',
+
+                    decimals: '{$priceFormat['decimals']}',
+                    rate:     '{$priceFormat['rate']}',
+                    after:     {$priceFormat['after']}
                 };
                 
                 (function() {

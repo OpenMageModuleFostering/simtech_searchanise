@@ -156,6 +156,8 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 $options['ajax_async_enabled'] = Mage::helper('searchanise/ApiSe')->checkAjaxAsync();
                 $options['object_async_enabled'] = Mage::helper('searchanise/ApiSe')->checkObjectAsync();
 
+                $options['use_full_feed'] = Mage::helper('searchanise/ApiSe')->getUseFullFeed();
+
                 $options['max_execution_time'] = ini_get('max_execution_time');
                 @set_time_limit(0);
                 $options['max_execution_time_after'] = ini_get('max_execution_time');

@@ -64,12 +64,13 @@
                         echo "LangCode:     '{$store->getCode()}',";
                         echo "ExportStatus: '{$exportStatus}',";
                         echo 'PriceFormat: {';
-                            echo 'symbol: "' . addslashes($priceFormat['symbol']) . '",';
-                            echo "rate :               '{$priceFormat['rate']}',";
-                            echo "decimals:            '{$priceFormat['decimals']}',";
-                            echo "decimals_separator:  '{$priceFormat['decimals_separator']}',";
-                            echo "thousands_separator: '{$priceFormat['thousands_separator']}',";
-                            echo "after:                {$priceFormat['after']}";
+                            echo "decimals_separator:  '" . addslashes($priceFormat['decimals_separator'])  . "',";
+                            echo "thousands_separator: '" . addslashes($priceFormat['thousands_separator']) . "',";
+                            echo 'symbol:              "' . addslashes($priceFormat['symbol']) . '",';
+                            
+                            echo "decimals: '{$priceFormat['decimals']}',";
+                            echo "rate:     '{$priceFormat['rate']}',";
+                            echo "after:     {$priceFormat['after']}";
                         echo '}';
                     echo '});';
                 }
