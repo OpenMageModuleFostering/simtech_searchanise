@@ -79,7 +79,8 @@ class Simtech_Searchanise_Model_Resource_Advanced_Collection extends Mage_Catalo
      */
     public function setOrder($attribute, $dir = 'desc')
     {
-        return $this->_searchaniseCollection->setOrder($attribute, $dir);
+        $this->_searchaniseCollection->setOrder($attribute, $dir);
+        return $this;
     }
 
     /**

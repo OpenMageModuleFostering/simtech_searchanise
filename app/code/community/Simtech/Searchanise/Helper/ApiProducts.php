@@ -366,6 +366,11 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
                     if ($customerGroupId == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID) {
                         $item['price'] = $price;
 
+                        $specialPrice = $product->getSpecialPrice();
+                        if (!is_null($specialPrice) && $specialPrice != false) {
+                            $item['list_price'] = round($product->getPrice(), Mage::helper('searchanise/ApiSe')->getFloatPrecision());
+                        }
+
                         $groupPrices = $product->getData('group_price');
                         if (empty($groupPrices)) {
                             $equalPriceForAllGroups = $price;
@@ -696,7 +701,16 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 
         self::_generateProductAttributes($item, $product, $childrenProducts, $unitedProducts, $store);
 
-        $categoryIds = $product->getCategoryIds();
+        $categoryCollection = Mage::getModel('catalog/category')
+            ->getCollection()
+            ->addAttributeToFilter('path', array('like' => "1/{$store->getRootCategoryId()}/%"));
+
+        $categoryCollection->getSelect()
+            ->join(array('cp' => $product->getResource()->getTable('catalog/category_product')), 'cp.category_id=entity_id')
+            ->where('cp.product_id = ' . $product->getId());
+
+        $categoryIds = $categoryCollection->getAllIds();
+
         if (!empty($categoryIds)) {
             $categoryNames = array();
             foreach ($categoryIds as $catKey => $categoryId) {

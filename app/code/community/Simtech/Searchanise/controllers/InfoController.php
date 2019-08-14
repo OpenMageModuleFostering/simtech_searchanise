@@ -199,6 +199,8 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 }
                 $options['memory_limit_after'] = ini_get('memory_limit');
 
+                $options['sync_mode'] = Mage::helper('searchanise/ApiSe')->getSyncMode();
+
                 if ($modules) {
                     $models = array(
                         'catalog_resource/product_collection' => 'Simtech_Searchanise_Model_Resource_Product_Collection',

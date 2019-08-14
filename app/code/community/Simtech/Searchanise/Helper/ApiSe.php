@@ -37,6 +37,10 @@ class Simtech_Searchanise_Helper_ApiSe
 
     const STATUS_NORMAL = 'normal';
     const STATUS_DISABLED = 'disabled';
+
+    const SYNC_MODE_REALTIME = 'realtime';
+    const SYNC_MODE_PERIODIC = 'periodic';
+    const SYNC_MODE_MANUAL   = 'manual';
         
     public static $exportStatusTypes = array(
         self::EXPORT_STATUS_QUEUED,
@@ -103,6 +107,26 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function getSearchInputSelector()
     {
         return self::getSetting('search_input_selector');
+    }
+
+    public static function isRealtimeSyncMode()
+    {
+        return self::getSetting('sync_mode') == self::SYNC_MODE_REALTIME;
+    }
+
+    public static function isPeriodicSyncMode()
+    {
+        return self::getSetting('sync_mode') == self::SYNC_MODE_PERIODIC;
+    }
+
+    public static function isManualSyncMode()
+    {
+        return self::getSetting('sync_mode') == self::SYNC_MODE_MANUAL;
+    }
+
+    public static function getSyncMode()
+    {
+        return self::getSetting('sync_mode');
     }
 
     public static function getEnabledSearchaniseSearch()

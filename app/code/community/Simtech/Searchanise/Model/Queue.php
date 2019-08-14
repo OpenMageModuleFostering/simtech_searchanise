@@ -238,7 +238,13 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
     public function addAction($action, $data = null, $curStore = null, $curStoreId = null)
     {
         if (in_array($action, self::$actionTypes)) {
-            if (!Mage::helper('searchanise/ApiSe')->checkParentPrivateKey()) {
+            if (
+                !Mage::helper('searchanise/ApiSe')->checkParentPrivateKey()
+                || (
+                    !Mage::helper('searchanise/ApiSe')->isRealtimeSyncMode()
+                    && !in_array($action, self::$mainActionTypes)
+                )
+            ) {
                 return false;
             }
             

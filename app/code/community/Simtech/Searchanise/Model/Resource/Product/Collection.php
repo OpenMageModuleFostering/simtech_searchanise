@@ -79,7 +79,8 @@ class Simtech_Searchanise_Model_Resource_Product_Collection extends Mage_Catalog
      */
     public function setOrder($attribute, $dir = 'desc')
     {
-        return $this->_searchaniseCollection->setOrder($attribute, $dir);
+        $this->_searchaniseCollection->setOrder($attribute, $dir);
+        return $this;
     }
 
     /**
@@ -112,5 +113,14 @@ class Simtech_Searchanise_Model_Resource_Product_Collection extends Mage_Catalog
     public function getLastPageNumberParent()
     {
         return parent::getLastPageNumber();
+    }
+
+    public function addIdFilter($productId, $exclude = false)
+    {
+        // Reset Searchanise filter to let other product collections set id filters
+        if (Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            $this->getSelect()->reset(Zend_Db_Select::WHERE);
+        }
+        return parent::addIdFilter($productId, $exclude);
     }
 }

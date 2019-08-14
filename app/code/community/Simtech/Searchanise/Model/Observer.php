@@ -38,6 +38,19 @@ class Simtech_Searchanise_Model_Observer
         return $this;
     }
 
+    /**
+     * Function for cron
+     *
+     */
+    public function reimport()
+    {
+        if (Mage::helper('searchanise/ApiSe')->isPeriodicSyncMode()) {
+            Mage::helper('searchanise/ApiSe')->queueImport();
+        }
+
+        return $this;
+    }
+
     // FOR SYSTEM //
     /**
      * After image cache was cleaned

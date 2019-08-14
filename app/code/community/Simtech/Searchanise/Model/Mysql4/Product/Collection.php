@@ -67,7 +67,8 @@ class Simtech_Searchanise_Model_Mysql4_Product_Collection extends Mage_Catalog_M
      */
     public function setOrder($attribute, $dir = 'desc')
     {
-        return $this->_searchaniseCollection->setOrder($attribute, $dir);
+        $this->_searchaniseCollection->setOrder($attribute, $dir);
+        return $this;
     }
 
     /**
