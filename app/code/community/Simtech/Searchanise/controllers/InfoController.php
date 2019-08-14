@@ -24,6 +24,8 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
     const PRODUCT_IDS        = 'product_ids';
     const CATEGORY_ID        = 'category_id';
     const CATEGORY_IDS       = 'category_ids';
+    const PAGE_ID            = 'page_id';
+    const PAGE_IDS           = 'page_ids';
     const BY_ITEMS           = 'by_items';
     const PARENT_PRIVATE_KEY = 'parent_private_key';
 
@@ -76,6 +78,8 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
             $productIds    = $this->getRequest()->getParam(self::PRODUCT_IDS);
             $categoryId    = $this->getRequest()->getParam(self::CATEGORY_ID);
             $categoryIds   = $this->getRequest()->getParam(self::CATEGORY_IDS);
+            $pageId        = $this->getRequest()->getParam(self::PAGE_ID);
+            $pageIds       = $this->getRequest()->getParam(self::PAGE_IDS);
             $byItems       = $this->getRequest()->getParam(self::BY_ITEMS);
             if ($byItems == 'Y') {
                 Mage::helper('searchanise/ApiProducts')->setIsGetProductsByItems(true);
@@ -94,6 +98,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 
             $productIds = $productId ? $productId : ($productIds ? explode(',', $productIds) : 0);
             $categoryIds = $categoryId ? $categoryId : ($categoryIds ? explode(',', $categoryIds) : 0);
+            $pageIds = $pageId ? $pageId : ($pageIds ? explode(',', $pageIds) : 0);
 
             $store = null;
             if (!empty($storeId)) {
@@ -142,7 +147,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
             } elseif ($resync) {
                 Mage::helper('searchanise/ApiSe')->queueImport($store);
 
-            } elseif (!empty($productIds) || !empty($categoryIds)) {
+            } elseif (!empty($productIds) || !empty($categoryIds) || !empty($pageIds)) {
                 if (!$categoryIds) {
                     $categoryIds = Simtech_Searchanise_Model_Queue::NOT_DATA;
                 }
@@ -151,6 +156,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                     'items'      => Mage::helper('searchanise/ApiProducts')->generateProductsFeed($productIds, $store, $checkData),
                     'schema'     => Mage::helper('searchanise/ApiProducts')->getSchema(Simtech_Searchanise_Model_Queue::NOT_DATA, $store),
                     'categories' => Mage::helper('searchanise/ApiCategories')->generateCategoriesFeed($categoryIds, $store, $checkData),
+                    'pages'      => Mage::helper('searchanise/ApiPages')->generatePagesFeed($pageIds, $store, $checkData),
                 );
 
                 if ($visual) {

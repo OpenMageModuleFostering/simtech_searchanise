@@ -16,6 +16,7 @@ class Simtech_Searchanise_Model_Observer
 {
     protected static $productIdsInCategory = array();
     protected static $isExistsCategory = false;
+    protected static $isExistsPage = false;
     
     public function __construct() 
     {
@@ -290,6 +291,62 @@ class Simtech_Searchanise_Model_Observer
             }
         }
         
+        return $this;
+    }
+
+    // FOR PAGES //
+    /**
+     * Delete page before
+     *
+     * @param   Varien_Event_Observer $observer
+     * @return  Mage_CmsIndex_Model_Observer
+     */
+    public function cmsPageDeleteBefore(Varien_Event_Observer $observer)
+    {
+        $page = $observer->getEvent()->getObject();
+                
+        if ($page && $page->getId()) {
+            Mage::getModel('searchanise/queue')->addActionPage($page, Simtech_Searchanise_Model_Queue::ACT_DELETE_PAGES);
+        }
+        
+        return $this;
+    }
+
+    /**
+     * Save page before
+     *
+     * @param   Varien_Event_Observer $observer
+     * @return  Mage_CmsIndex_Model_Observer
+     */
+    public function cmsPageSaveBefore(Varien_Event_Observer $observer)
+    {
+        $page = $observer->getEvent()->getObject();
+
+        if ($page && $page->getId()) {
+            self::$isExistsPage = true; // New page doesn't run the cmsPageSaveBefore function.
+            Mage::getModel('searchanise/queue')->addActionPage($page);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Save page after
+     *
+     * @param   Varien_Event_Observer $observer
+     * @return  Mage_CmsIndex_Model_Observer
+     */
+    public function cmsPageSaveAfter(Varien_Event_Observer $observer)
+    {
+        $page = $observer->getEvent()->getObject();
+
+        if ($page && $page->getId()) {
+            if (!self::$isExistsPage) { // if page was created now
+                Mage::getModel('searchanise/queue')->addActionPage($page);
+            }
+        }
+        self::$isExistsPage = false;
+                
         return $this;
     }
 

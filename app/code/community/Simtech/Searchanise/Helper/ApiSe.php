@@ -545,6 +545,11 @@ class Simtech_Searchanise_Helper_ApiSe
     {
         return self::getSetting('categories_per_pass');
     }
+
+    public static function getPagesPerPass()
+    {
+        return self::getSetting('pages_per_pass');
+    }
     
     public static function getMaxErrorCount()
     {
@@ -1150,94 +1155,7 @@ class Simtech_Searchanise_Helper_ApiSe
 
         return $connected;
     }
-    
-    public static function getMinMaxProductId($store = null)
-    {
-        $startId = 0;
-        $endId = 0;
 
-        $productStartCollection = Mage::getModel('catalog/product')
-            ->getCollection()
-            ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_ASC)
-            ->setPageSize(1);
-        if ($store) {
-            $productStartCollection = $productStartCollection->addStoreFilter($store);
-        }
-        $productStartCollection = $productStartCollection->load();
-
-        $productEndCollection = Mage::getModel('catalog/product')
-            ->getCollection()
-            ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_DESC)
-            ->setPageSize(1);
-        if ($store) {
-            $productEndCollection = $productEndCollection->addStoreFilter($store);
-        }
-        $productEndCollection = $productEndCollection->load();
-
-        if ($productStartCollection) {
-            $productArr = $productStartCollection->toArray(array('entity_id'));
-            if (!empty($productArr)) {
-                $firstItem = reset($productArr);
-                $startId = $firstItem['entity_id'];
-            }
-        }
-
-        if ($productEndCollection) {
-            $productArr = $productEndCollection->toArray(array('entity_id'));
-            if (!empty($productArr)) {
-                $firstItem = reset($productArr);
-                $endId = $firstItem['entity_id'];
-            }
-        }
-
-        return array($startId, $endId);
-    }
-    
-    public static function getProductIdsFormRange($start, $end, $step, $store = null, $isOnlyActive = false)
-    {
-        $arrProducts = array();
-        // Need for get correct products.
-        if ($store) {
-            Mage::app()->setCurrentStore($store->getId());
-        } else {
-            Mage::app()->setCurrentStore(0);
-        }
-        
-        $products = Mage::getModel('catalog/product')
-            ->getCollection()
-            ->addFieldToFilter('entity_id', array("from" => $start, "to" => $end))
-            ->setPageSize($step);
-        
-        if ($store) {
-            $products->addStoreFilter($store);
-        }
-
-        if ($isOnlyActive) {
-            Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($products);
-            // Fixme in the future
-            // It may require to disable "product visibility" filter if "is full feed".
-            if (self::getUseFullFeed() || self::getUseNavigation()) {
-                Mage::getSingleton('catalog/product_visibility')->addVisibleInSiteFilterToCollection($products);
-            } else {
-                Mage::getSingleton('catalog/product_visibility')->addVisibleInSearchFilterToCollection($products);
-            }
-            // end fixme
-        }
-        
-        $products->load();
-        if ($products) {
-            // Not used because 'arrProducts' comprising 'stock_item' field and is 'array(array())'
-            // $arrProducts = $products->toArray(array('entity_id'));
-            foreach ($products as $product) {
-                $arrProducts[] = $product->getId();
-            }
-        }
-        // It is necessary for save memory.
-        unset($products);
-
-        return $arrProducts;
-    }
-    
     public static function getFilterableFiltersIds($store = null)
     {
         $arrFilters = array();
@@ -1364,10 +1282,13 @@ class Simtech_Searchanise_Helper_ApiSe
 
         if ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS) {
             $step = self::getProductsPerPass() * 50;
-            list($start, $max) = self::getMinMaxProductId($store);
+            list($start, $max) = Mage::helper('searchanise/ApiProducts')->getMinMaxProductId($store);
         } elseif ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES) {
             $step = self::getCategoriesPerPass() * 50;
             list($start, $max) = Mage::helper('searchanise/ApiCategories')->getMinMaxCategoryId($store);
+        } elseif ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PAGES) {
+            $step = self::getPagesPerPass() * 50;
+            list($start, $max) = Mage::helper('searchanise/ApiPages')->getMinMaxPageId($store);
         }
 
         do {
@@ -1375,9 +1296,11 @@ class Simtech_Searchanise_Helper_ApiSe
             $chunkItemIds = null;
 
             if ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS) {
-                $chunkItemIds = self::getProductIdsFormRange($start, $end, $step, $store, $isOnlyActive);
+                $chunkItemIds = Mage::helper('searchanise/ApiProducts')->getProductIdsFormRange($start, $end, $step, $store, $isOnlyActive);
             } elseif ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES) {
                 $chunkItemIds = Mage::helper('searchanise/ApiCategories')->getCategoryIdsFormRange($start, $end, $step, $store);
+            } elseif ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PAGES) {
+                $chunkItemIds = Mage::helper('searchanise/ApiPages')->getPageIdsFormRange($start, $end, $step, $store);
             }
             
             $start = $end + 1;
@@ -1501,6 +1424,7 @@ class Simtech_Searchanise_Helper_ApiSe
 
                 self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, true);
                 self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES, true);
+                self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PAGES, true);
 
                 self::echoConnectProgress('.');
 
@@ -1556,15 +1480,13 @@ class Simtech_Searchanise_Helper_ApiSe
                     }
 
                 } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PAGES) {
-                    // Fixme in the future
-                    // $pages = Mage::helper('searchanise/ApiPages')->generatePagesFeed($data, $store);
-                    // if (!empty($pages)) {
-                    //     $dataForSend = array(
-                    //         'header' => $header,
-                    //         'pages'  => $pages,
-                    //     );
-                    // }
-                    // end fixme
+                    $pages = Mage::helper('searchanise/ApiPages')->generatePagesFeed($data, $store);
+                    if (!empty($pages)) {
+                        $dataForSend = array(
+                            'header' => $header,
+                            'pages'  => $pages,
+                        );
+                    }
                 } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES) {
                     $schema = null;
 

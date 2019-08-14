@@ -127,7 +127,7 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
             ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_ASC)
             ->setPageSize(1);
         if ($store) {
-            $categoryStartCollection = $categoryStartCollection->setStoreId($store->getId());;
+            $categoryStartCollection = $categoryStartCollection->setStoreId($store->getId());
         }
         $categoryStartCollection = $categoryStartCollection->load();
 
@@ -136,7 +136,7 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
             ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_DESC)
             ->setPageSize(1);
         if ($store) {
-            $categoryEndCollection = $categoryEndCollection->setStoreId($store->getId());;
+            $categoryEndCollection = $categoryEndCollection->setStoreId($store->getId());
         }
 
         $categoryEndCollection = $categoryEndCollection->load();
@@ -170,7 +170,7 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
             ->setPageSize($step);
         
         if ($store) {
-            $categories = $categories->setStoreId($store->getId());;
+            $categories = $categories->setStoreId($store->getId());
         }
         
         $categories = $categories->load();

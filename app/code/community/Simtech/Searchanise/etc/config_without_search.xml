@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>3.0.1</version>
+            <version>3.0.2</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -412,7 +412,7 @@
                         </rating>
                     </observers>
                 </catalog_entity_attribute_delete_after>
-                <!-- facet-categories -->
+                <!-- categories -->
                 <catalog_category_delete_before>
                     <observers>
                         <rating>
@@ -437,6 +437,31 @@
                         </rating>
                     </observers>
                 </catalog_category_save_after>
+                <!-- pages -->
+                <cms_page_delete_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>cmsPageDeleteBefore</method>
+                        </rating>
+                    </observers>
+                </cms_page_delete_before>
+                <cms_page_save_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>cmsPageSaveBefore</method>
+                        </rating>
+                    </observers>
+                </cms_page_save_before>
+                <cms_page_save_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>cmsPageSaveAfter</method>
+                        </rating>
+                    </observers>
+                </cms_page_save_after>
             <!-- END CATALOG-->
             <!-- SALES -->
                 <!-- products -->
@@ -578,6 +603,7 @@
                 <ajax_async_timeout>1</ajax_async_timeout>
                 <products_per_pass>100</products_per_pass>
                 <categories_per_pass>500</categories_per_pass>
+                <pages_per_pass>50</pages_per_pass>
                 <max_error_count>25</max_error_count>
                 <max_processing_thread>3</max_processing_thread>
                 <max_processing_time>720</max_processing_time>

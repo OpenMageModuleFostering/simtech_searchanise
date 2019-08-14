@@ -939,31 +939,36 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         if (isset($arrProducts[$keyProducts])) {
             // Nothing
         } else {
-            $products = Mage::getModel('catalog/product')
-                ->getCollection()
-                ->addAttributeToSelect('*')
-                ->addUrlRewrite();
+            $products = array();
+            if (self::$isGetProductsByItems) {
+                $products = self::_getProductsByItems($productIds, $store);
+            } else {
+                $products = Mage::getModel('catalog/product')
+                    ->getCollection()
+                    ->addAttributeToSelect('*')
+                    ->addUrlRewrite();
 
-            if ($customerGroupId != null) {
-                if ($store) {
-                    $products->addPriceData($customerGroupId, $store->getWebsiteId());
-                } else {
-                    $products->addPriceData($customerGroupId);
+                if ($customerGroupId != null) {
+                    if ($store) {
+                        $products->addPriceData($customerGroupId, $store->getWebsiteId());
+                    } else {
+                        $products->addPriceData($customerGroupId);
+                    }
                 }
-            }
+                    
+                if ($store) {
+                    $products
+                        ->setStoreId($store)
+                        ->addStoreFilter($store);
+                }
                 
-            if ($store) {
-                $products
-                    ->setStoreId($store)
-                    ->addStoreFilter($store);
-            }
-            
-            if ($productIds !== Simtech_Searchanise_Model_Queue::NOT_DATA) {
-                // Already exist automatic definition 'one value' or 'array'.
-                $products->addIdFilter($productIds);
-            }
+                if ($productIds !== Simtech_Searchanise_Model_Queue::NOT_DATA) {
+                    // Already exist automatic definition 'one value' or 'array'.
+                    $products->addIdFilter($productIds);
+                }
 
-            $products->load();
+                $products->load();
+            }
 
             // Fixme in the future
             // Maybe create cache without customerGroupId and setCustomerGroupId after using cache.
@@ -1003,6 +1008,93 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         }
 
         return $items;
+    }
+
+    public static function getMinMaxProductId($store = null)
+    {
+        $startId = 0;
+        $endId = 0;
+
+        $productStartCollection = Mage::getModel('catalog/product')
+            ->getCollection()
+            ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_ASC)
+            ->setPageSize(1);
+        if ($store) {
+            $productStartCollection = $productStartCollection->addStoreFilter($store);
+        }
+        $productStartCollection = $productStartCollection->load();
+
+        $productEndCollection = Mage::getModel('catalog/product')
+            ->getCollection()
+            ->addAttributeToSort('entity_id', Varien_Data_Collection::SORT_ORDER_DESC)
+            ->setPageSize(1);
+        if ($store) {
+            $productEndCollection = $productEndCollection->addStoreFilter($store);
+        }
+        $productEndCollection = $productEndCollection->load();
+
+        if ($productStartCollection) {
+            $productArr = $productStartCollection->toArray(array('entity_id'));
+            if (!empty($productArr)) {
+                $firstItem = reset($productArr);
+                $startId = $firstItem['entity_id'];
+            }
+        }
+
+        if ($productEndCollection) {
+            $productArr = $productEndCollection->toArray(array('entity_id'));
+            if (!empty($productArr)) {
+                $firstItem = reset($productArr);
+                $endId = $firstItem['entity_id'];
+            }
+        }
+
+        return array($startId, $endId);
+    }
+    
+    public static function getProductIdsFormRange($start, $end, $step, $store = null, $isOnlyActive = false)
+    {
+        $arrProducts = array();
+        // Need for get correct products.
+        if ($store) {
+            Mage::app()->setCurrentStore($store->getId());
+        } else {
+            Mage::app()->setCurrentStore(0);
+        }
+        
+        $products = Mage::getModel('catalog/product')
+            ->getCollection()
+            ->addFieldToFilter('entity_id', array("from" => $start, "to" => $end))
+            ->setPageSize($step);
+        
+        if ($store) {
+            $products->addStoreFilter($store);
+        }
+
+        if ($isOnlyActive) {
+            Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($products);
+            // Fixme in the future
+            // It may require to disable "product visibility" filter if "is full feed".
+            if (Mage::helper('searchanise/ApiSe')->getUseFullFeed() || Mage::helper('searchanise/ApiSe')->getUseNavigation()) {
+                Mage::getSingleton('catalog/product_visibility')->addVisibleInSiteFilterToCollection($products);
+            } else {
+                Mage::getSingleton('catalog/product_visibility')->addVisibleInSearchFilterToCollection($products);
+            }
+            // end fixme
+        }
+        
+        $products->load();
+        if ($products) {
+            // Not used because 'arrProducts' comprising 'stock_item' field and is 'array(array())'
+            // $arrProducts = $products->toArray(array('entity_id'));
+            foreach ($products as $product) {
+                $arrProducts[] = $product->getId();
+            }
+        }
+        // It is necessary for save memory.
+        unset($products);
+
+        return $arrProducts;
     }
 
     private static function _getRequiredAttributes()

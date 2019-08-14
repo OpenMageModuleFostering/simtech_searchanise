@@ -161,7 +161,7 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
     {
         $stores = Mage::helper('searchanise/ApiSe')->getStores($curStore);
         
-        foreach ($stores as $k_store => $store) {
+        foreach ($stores as $keyStore => $store) {
             $queue = Mage::getModel('searchanise/queue')->getCollection()->addFilter('store_id', $store->getId())->toArray();
             
             if (!empty($queue['items'])) {
@@ -234,26 +234,25 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
         return $collection->load()->delete();
     }
     
-    public function addAction($action, $data = NULL, $curStore = null, $curStoreId = null)
+    public function addAction($action, $data = null, $curStore = null, $curStoreId = null)
     {
-        if (in_array($action, self::$actionTypes))
-        {
+        if (in_array($action, self::$actionTypes)) {
             if (!Mage::helper('searchanise/ApiSe')->checkParentPrivateKey()) {
                 return false;
             }
             
             $data = serialize((array)$data);
             $data = array($data);
-            
+
             $stores = Mage::helper('searchanise/ApiSe')->getStores($curStore, $curStoreId);
-            
+
             if ($action == self::ACT_PREPARE_FULL_IMPORT && !empty($curStore)) {
                 // Truncate queue for all
                 Mage::getModel('searchanise/queue')->clearActions($curStore);
             }
             
             foreach ($data as $d) {
-                foreach ($stores as $k_store => $store) {
+                foreach ($stores as $keyStore => $store) {
                     if (Mage::helper('searchanise/ApiSe')->getStatusModule($store) != 'Y') {
                         if (!in_array($action, self::$mainActionTypes)) {
                             continue;
@@ -272,13 +271,13 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
                             ->delete();
                     }
                     
-                    $queue_data = array(
+                    $queueData = array(
                         'action'    => $action,
                         'data'      => $d,
                         'store_id'  => $store->getId(),
                     );
-                    
-                    $this->setData($queue_data)->save();
+
+                    $this->setData($queueData)->save();
                 }
             }
             
@@ -295,26 +294,62 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
             // need get $currentIsActive for all stores because each store can have his value of IsActive for category.
             $currentIsActive = $category->getIsActive();
             $storeId = $category->getStoreId();
+            $prevCategory = Mage::getModel('catalog/category')
+                ->setStoreId($category->getStoreId())
+                ->load($category->getId());
 
-            if ($currentIsActive) {
-                // Delete need for all stores
-                if ($action == Simtech_Searchanise_Model_Queue::ACT_DELETE_CATEGORIES) {
-                    $storeId = null;
+            if ($action == Simtech_Searchanise_Model_Queue::ACT_DELETE_CATEGORIES) {
+                if ($prevCategory && $prevCategory->getIsActive()) {
+                    // Delete in all stores
+                    Mage::getModel('searchanise/queue')->addAction($action, $category->getId());
                 }
-                Mage::getModel('searchanise/queue')->addAction($action, $category->getId(), null, $storeId);
-
             } elseif ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES) {
-                $prevCategory = Mage::getModel('catalog/category')
-                    ->setStoreId($category->getStoreId())
-                    ->load($category->getId());
-                if ($prevCategory) {
+                if ($currentIsActive) {
+                    Mage::getModel('searchanise/queue')->addAction($action, $category->getId(), null, $storeId);
+                } else {
                     $prevIsActive = $prevCategory->getIsActive();
                     if ($prevIsActive != $currentIsActive) {
                         // Delete need for all stores
                         Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_DELETE_CATEGORIES, $category->getId());
                     }
                 }
+            }
+            // end fixme
+        }
 
+        return true;
+    }
+
+    public function addActionPage($page, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PAGES)
+    {
+        if ($page) {
+            // Fixme in the future
+            // need get $currentIsActive for all stores because each store can have his value of IsActive for page.
+            $currentIsActive = $page->getIsActive();
+            $storeId = $page->getStoreId();
+            $prevPage = Mage::getModel('cms/page')
+                // Fixme in the future
+                // need check for correct
+                ->setStoreId($page->getStoreId())
+                // ->addStoreFilter($page->getStoreId())
+                // end fixme
+                ->load($page->getId());
+
+            if ($action == Simtech_Searchanise_Model_Queue::ACT_DELETE_PAGES) {
+                if ($prevPage && $prevPage->getIsActive()) {
+                    // Delete in all stores
+                    Mage::getModel('searchanise/queue')->addAction($action, $page->getId());
+                }
+            } elseif ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PAGES) {
+                if ($currentIsActive) {
+                    Mage::getModel('searchanise/queue')->addAction($action, $page->getId(), null, $storeId);
+                } else {
+                    $prevIsActive = $prevPage->getIsActive();
+                    if ($prevIsActive != $currentIsActive) {
+                        // Delete need for all stores
+                        Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_DELETE_PAGES, $page->getId());
+                    }
+                }
             }
             // end fixme
         }
