@@ -47,7 +47,7 @@
 							<show_in_store>1</show_in_store>
 						</input_id_search>
 						<type_async translate="label comment">
-							<label><![CDATA[Initialize database synchronization with Cron/AJAX]]></label>
+							<label><![CDATA[Sync Init Method]]></label>
 							<comment><![CDATA[<strong>Cron</strong>. If cron service is set up and running, it is recommended to use this option. Database synchronization will be initialized according to the cron schedule.<br>
 								<strong>AJAX</strong>. Select this option if you want the database synchronization to be initialized everytime a page is visited in the customer area.
 							]]></comment>

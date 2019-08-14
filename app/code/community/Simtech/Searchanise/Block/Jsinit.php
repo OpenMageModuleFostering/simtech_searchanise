@@ -47,7 +47,14 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
 
 		$minQuantityDecimals = Mage::helper('searchanise/ApiSe')->getMinQuantityDecimals();
 		if (!empty($minQuantityDecimals)) {
-			$restrictBy .= 'Searchanise.AutoCmpParams.restrictBy.quantity_decimals = ' . $minQuantityDecimals . ',';
+			$restrictBy .= "Searchanise.AutoCmpParams.restrictBy.quantity_decimals = '{$minQuantityDecimals},';";
+		}
+		
+		$showOutOfStock = Mage::getStoreConfigFlag(Mage_CatalogInventory_Helper_Data::XML_PATH_SHOW_OUT_OF_STOCK);
+		if ($showOutOfStock) {
+			// nothing
+		} else {
+			$restrictBy .= "\nSearchanise.AutoCmpParams.restrictBy.is_in_stock = '1';";
 		}
 
 		$price_format['after'] = $price_format['after'] ? 'true' : 'false';
@@ -65,7 +72,6 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
 				Searchanise.AutoCmpParams.restrictBy = {};
 				Searchanise.AutoCmpParams.restrictBy.status = '1';
 				Searchanise.AutoCmpParams.restrictBy.visibility = '3|4';
-				Searchanise.AutoCmpParams.restrictBy.is_in_stock = '1';
 				{$restrictBy}
 				
 				Searchanise.options = {};

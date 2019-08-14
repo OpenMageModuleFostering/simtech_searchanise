@@ -41,7 +41,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 		return $tagCollection
 			->addPopularity()
 			->addStatusFilter(Mage::getModel('tag/tag')->getApprovedStatus())
-            ->addStoresVisibility()
+			->addStoresVisibility()
 			->addProductFilter($product->getId())
 			->load();
 	}
@@ -92,15 +92,10 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 					$productsCustomerGroup = self::getProduct($product->getId(), $store, false, $customerGroup->getId());
 					if ($productsCustomerGroup) {
 						foreach ($productsCustomerGroup as $productCustomerGroup) {
-							$price = $productCustomerGroup->getData('price');
-							$minPrice = $productCustomerGroup->getData('min_price');
+							$price = $productCustomerGroup->getFinalPrice();
 							break;
 						}
 					}
-				}
-
-				if ($minPrice != '') {
-					$price = $minPrice;
 				}
 
 				if ($price != '') {
@@ -108,12 +103,6 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 				}
 
 				if ($customerGroup->getId() == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID) {
-					// Uncomment the lines below 
-					// if use special withnout "From Date" and "To Date"
-					// $specialPrice = $product->getData('special_price');
-					// if ($specialPrice != '') {
-					// 	$price = $specialPrice;
-					// }
 					$entry .= '<cs:price>' . $price . '</cs:price>'. self::XML_END_LINE;
 					$defaultPrice = $price;
 				}

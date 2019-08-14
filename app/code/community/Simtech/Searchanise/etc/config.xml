@@ -15,7 +15,7 @@
 <config>
 	<modules>
 		<Simtech_Searchanise>
-			<version>0.1.3</version>
+			<version>0.1.5</version>
 		</Simtech_Searchanise>
 	</modules>
 	<frontend>
