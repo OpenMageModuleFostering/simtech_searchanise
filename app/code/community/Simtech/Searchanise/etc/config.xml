@@ -15,12 +15,13 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>1.1.4</version>
+            <version>1.1.5</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
         <routers>
             <!-- OVERRIDE CATALOG CONTOLLERS -->
+            <!-- [disabled_searchanise_search] -->
             <catalog>
                 <args>
                    <modules>
@@ -28,7 +29,9 @@
                    </modules>
                 </args>
             </catalog>
+            <!-- [/disabled_searchanise_search] -->
             <!-- OVERRIDE CATALOGSEARCH CONTOLLERS -->
+            <!-- [disabled_searchanise_search] -->
             <catalogsearch>
                 <args>
                    <modules>
@@ -36,7 +39,9 @@
                    </modules>
                 </args>
             </catalogsearch>
+            <!-- [/disabled_searchanise_search] -->
             <!-- OVERRIDE TAG CONTOLLERS -->
+            <!-- [disabled_searchanise_search] -->
             <tag>
                 <args>
                     <modules>
@@ -44,6 +49,7 @@
                     </modules>
                 </args>
             </tag>
+            <!-- [/disabled_searchanise_search] -->
             <!-- END -->
             <searchanise>
                 <use>standard</use>

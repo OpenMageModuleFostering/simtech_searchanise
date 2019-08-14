@@ -16,6 +16,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 {
     const RESYNC             = 'resync'; 
     const OUTPUT             = 'visual';
+    const PROFILER             = 'profiler';
     const STORE_ID           = 'store_id';
     const PRODUCT_ID         = 'product_id';
     const PRODUCT_IDS        = 'product_ids';
@@ -28,7 +29,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
     */
     public function preDispatch()
     {
-        // It is need if it will used the "generateProductsXML" function
+        // It is need if controller will used the "generateProductsXML" function
 
         // Do not start standart session
         $this->setFlag('', self::FLAG_NO_START_SESSION, 1); 
@@ -48,6 +49,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
     {
         $resync           = $this->getRequest()->getParam(self::RESYNC);
         $visual           = $this->getRequest()->getParam(self::OUTPUT);
+        $profiler         = $this->getRequest()->getParam(self::PROFILER);
         $storeId          = $this->getRequest()->getParam(self::STORE_ID);
         $productId        = $this->getRequest()->getParam(self::PRODUCT_ID);
         $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
@@ -55,6 +57,8 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 
         if ($productId) {
             $productIds = array($productId);
+        } elseif ($productIds) {
+            $productIds = explode(',', $productIds);
         }
 
         if ((empty($parentPrivateKey)) || 
@@ -71,14 +75,48 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 echo Mage::helper('core')->jsonEncode($options);
             }
         } else {
-            if ($resync) {
+            $store = null;
+            if (!empty($storeId)) {
+                $store = Mage::app()->getStore($storeId);
+            }
+
+            if ($profiler) {
+                $numberIterations = 100;
+                $old = $this->getRequest()->getParam('old');
+
+                if (empty($productIds)) {
+                    Mage::app()->setCurrentStore(0);
+                    $allProductIds = Mage::getModel('catalog/product')->getCollection()->setPageSize($numberIterations)->load();
+
+                    $productIds = array();
+                    foreach ($allProductIds as $key => $value) {
+                        $productIds [] = $value['entity_id'];
+                        if (count($productIds) > $numberIterations) {
+                            break;
+                        }
+                    }
+                    $numberIterations = 1;
+                }
+
+                $n = 0;
+                while ($n < $numberIterations) {
+                    if ($old == 'Y') {
+                        $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store);
+                        // $products = Mage::helper('searchanise/ApiXML')->getProductsOld($productIds, $store);
+                    } else {
+                        $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store);
+                        // $products = Mage::helper('searchanise/ApiXML')->getProducts($productIds, $store);
+                    }
+
+                    $n++;
+                }
+
+                echo $this->_profiler();
+            } elseif ($resync) {
                 Mage::helper('searchanise/ApiSe')->queueImport();
 
             } elseif (!empty($productIds)) {
-                $store = null;
-                if (!empty($storeId)) {
-                    $store = Mage::app()->getStore($storeId);
-                }
+
                 $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store);
 
                 if ($visual) {
@@ -117,5 +155,49 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
         }
 
         die();
+        return $this;
+    }
+
+    protected function _profiler()
+    {
+        // if (!$this->_beforeToHtml()
+        //     || !Mage::getStoreConfig('dev/debug/profiler')
+        //     || !Mage::helper('core')->isDevAllowed()) {
+        //     return '';
+        // }
+
+        $timers = Varien_Profiler::getTimers();
+
+        #$out = '<div style="position:fixed;bottom:5px;right:5px;opacity:.1;background:white" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.1">';
+        #$out = '<div style="opacity:.1" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.1">';
+        $out = "<a href=\"javascript:void(0)\" onclick=\"$('profiler_section').style.display=$('profiler_section').style.display==''?'none':''\">[profiler]</a>";
+        $out .= '<div id="profiler_section" style="background:white; display:block">';
+        $out .= '<pre>Memory usage: real: '.memory_get_usage(true).', emalloc: '.memory_get_usage().'</pre>';
+        $out .= '<table border="1" cellspacing="0" cellpadding="2" style="width:auto">';
+        $out .= '<tr><th>Code Profiler</th><th>Time</th><th>Cnt</th><th>Emalloc</th><th>RealMem</th></tr>';
+        foreach ($timers as $name=>$timer) {
+            $sum = Varien_Profiler::fetch($name,'sum');
+            $count = Varien_Profiler::fetch($name,'count');
+            $realmem = Varien_Profiler::fetch($name,'realmem');
+            $emalloc = Varien_Profiler::fetch($name,'emalloc');
+            if ($sum<.0010 && $count<10 && $emalloc<10000) {
+                continue;
+            }
+            $out .= '<tr>'
+                .'<td align="left">'.$name.'</td>'
+                .'<td>'.number_format($sum,4).'</td>'
+                .'<td align="right">'.$count.'</td>'
+                .'<td align="right">'.number_format($emalloc).'</td>'
+                .'<td align="right">'.number_format($realmem).'</td>'
+                .'</tr>'
+            ;
+        }
+        $out .= '</table>';
+        $out .= '<pre>';
+        $out .= print_r(Varien_Profiler::getSqlProfiler(Mage::getSingleton('core/resource')->getConnection('core_write')), 1);
+        $out .= '</pre>';
+        $out .= '</div>';
+
+        return $out;
     }
 }
