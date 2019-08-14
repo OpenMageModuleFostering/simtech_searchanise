@@ -15,32 +15,32 @@ require_once("Mage/CatalogSearch/controllers/AdvancedController.php");
 
 class Simtech_Searchanise_AdvancedController extends Mage_CatalogSearch_AdvancedController
 {
-	protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
-	protected $_defaultListBlock    = 'catalog/product_list';
-	
-	/**
-	 * Display search result
-	 */
-	public function resultAction()
-	{
-		if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-			return parent::resultAction();
-		}
+    protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
+    protected $_defaultListBlock    = 'catalog/product_list';
+    
+    /**
+     * Display search result
+     */
+    public function resultAction()
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::resultAction();
+        }
 
-		try {
-			$query = $this->getRequest()->getQuery();
-		} catch (Mage_Core_Exception $e) {
-			return parent::resultAction();
-		}
+        try {
+            $query = $this->getRequest()->getQuery();
+        } catch (Mage_Core_Exception $e) {
+            return parent::resultAction();
+        }
 
-		if ($query) {
-			if (Mage::helper('searchanise')->checkEnabled()) {
-				$block_toolbar = $this->getLayout()->createBlock($this->_defaultToolbarBlock, microtime());
-				
-				Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::TEXT_ADVANCED_FIND, $this, $block_toolbar, $query);
-			}
-		}
-		
-		return parent::resultAction();
-	}
+        if ($query) {
+            if (Mage::helper('searchanise')->checkEnabled()) {
+                $block_toolbar = $this->getLayout()->createBlock($this->_defaultToolbarBlock, microtime());
+                
+                Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::TEXT_ADVANCED_FIND, $this, $block_toolbar, $query);
+            }
+        }
+        
+        return parent::resultAction();
+    }
 }

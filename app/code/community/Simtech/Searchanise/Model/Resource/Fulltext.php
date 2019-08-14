@@ -15,13 +15,13 @@ require_once("Mage/CatalogSearch/Model/Resource/Fulltext.php");
 
 class Simtech_Searchanise_Model_Resource_Fulltext extends Mage_CatalogSearch_Model_Resource_Fulltext
 {
-	public function prepareResult($object, $queryText, $query)
+    public function prepareResult($object, $queryText, $query)
     {
-		if (!Mage::helper('searchanise')->checkSearchaniseResult()) {
-			return parent::prepareResult($object, $queryText, $query);
-		}
-		
-		return $this;
-	}
+        if (!Mage::helper('searchanise')->checkSearchaniseResult()) {
+            return parent::prepareResult($object, $queryText, $query);
+        }
+        
+        return $this;
+    }
 }
 

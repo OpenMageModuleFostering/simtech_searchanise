@@ -13,9 +13,9 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/-->
 <layout version="0.1.0">
-	<default>
-		<reference name="before_body_end">
-			<block type="Simtech_Searchanise_Block_Async" name="searchanise_async"></block>
-		</reference>
-	</default>
+    <default>
+        <reference name="before_body_end">
+            <block type="Simtech_Searchanise_Block_Async" name="searchanise_async"></block>
+        </reference>
+    </default>
 </layout>

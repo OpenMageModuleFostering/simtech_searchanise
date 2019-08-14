@@ -22,12 +22,12 @@ class Simtech_Searchanise_Model_Config extends Mage_Core_Model_Abstract
      */
     protected $_resourceModel;
 
-	protected function _construct()
-	{
-		$this->_init('searchanise/config', 'config_id');
-	}
+    protected function _construct()
+    {
+        $this->_init('searchanise/config', 'config_id');
+    }
 
-	/**
+    /**
      * Get config resource model
      *
      * @return Mage_Searchanise_Store_Mysql4_Config
@@ -41,7 +41,7 @@ class Simtech_Searchanise_Model_Config extends Mage_Core_Model_Abstract
         return $this->_resourceModel;
     }
 
-	/**
+    /**
      * Retrieve store configuration data
      *
      * @param string $path
@@ -51,26 +51,26 @@ class Simtech_Searchanise_Model_Config extends Mage_Core_Model_Abstract
     */
     public function getConfig($path, $scope = 'default', $scopeId = 0)
     {
-    	$path = rtrim($path, '/');
-    	
+        $path = rtrim($path, '/');
+        
         $collection = $this->getCollection()
-			->addFieldToFilter('path', $path)
-			->addFieldToFilter('scope', $scope)
-			->addFieldToFilter('scope_id', $scopeId)
-			->setPageSize(1)
-			->load();
+            ->addFieldToFilter('path', $path)
+            ->addFieldToFilter('scope', $scope)
+            ->addFieldToFilter('scope_id', $scopeId)
+            ->setPageSize(1)
+            ->load();
 
-		if (!empty($collection)) {
-			foreach ($collection as $key => $data) {
-				$value = $data->getValue();
+        if (!empty($collection)) {
+            foreach ($collection as $key => $data) {
+                $value = $data->getValue();
 
-				if (!empty($value)) {
-					return $value;
-				}
-			}
-		}
+                if (!empty($value)) {
+                    return $value;
+                }
+            }
+        }
 
-		return;
+        return;
     }
 
     /**

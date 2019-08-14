@@ -14,39 +14,39 @@
 
 class Simtech_Searchanise_Model_Layer extends Mage_Catalog_Model_Layer
 {
-	/**
-	 * Prepare product collection
-	 *
-	 * @param Mage_Catalog_Model_Resource_Eav_Resource_Product_Collection $collection
-	 * @return Mage_Catalog_Model_Layer
-	 */
-	public function prepareProductCollection($collection)
-	{
-		if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-			return parent::prepareProductCollection($collection);
-		}
-		
-		if (method_exists($collection, 'setSearchaniseRequest')) {
-			$collection->setSearchaniseRequest(Mage::helper('searchanise')->getSearchaniseRequest());
-		}
-		
-		if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
-			return parent::prepareProductCollection($collection);
-		}
-		
-		$collection
-			->addAttributeToSelect(Mage::getSingleton('catalog/config')->getProductAttributes())
-			->addSearchaniseFilter()
-			->addMinimalPrice()
-			->addFinalPrice()
-			->addTaxPercents()
-			//->addStoreFilter()
-			->addUrlRewrite($this->getCurrentCategory()->getId());
-		
-		Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($collection);
-		Mage::getSingleton('catalog/product_visibility')->addVisibleInCatalogFilterToCollection($collection);
-		
-		return $this;
-	}
+    /**
+     * Prepare product collection
+     *
+     * @param Mage_Catalog_Model_Resource_Eav_Resource_Product_Collection $collection
+     * @return Mage_Catalog_Model_Layer
+     */
+    public function prepareProductCollection($collection)
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::prepareProductCollection($collection);
+        }
+        
+        if (method_exists($collection, 'setSearchaniseRequest')) {
+            $collection->setSearchaniseRequest(Mage::helper('searchanise')->getSearchaniseRequest());
+        }
+        
+        if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
+            return parent::prepareProductCollection($collection);
+        }
+        
+        $collection
+            ->addAttributeToSelect(Mage::getSingleton('catalog/config')->getProductAttributes())
+            ->addSearchaniseFilter()
+            ->addMinimalPrice()
+            ->addFinalPrice()
+            ->addTaxPercents()
+            //->addStoreFilter()
+            ->addUrlRewrite($this->getCurrentCategory()->getId());
+        
+        Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($collection);
+        Mage::getSingleton('catalog/product_visibility')->addVisibleInCatalogFilterToCollection($collection);
+        
+        return $this;
+    }
 }
 

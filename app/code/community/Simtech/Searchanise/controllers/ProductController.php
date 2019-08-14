@@ -15,26 +15,26 @@ require_once("Mage/Tag/controllers/ProductController.php");
 
 class Simtech_Searchanise_ProductController extends Mage_Tag_ProductController
 {
-	protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
-	protected $_defaultListBlock    = 'catalog/product_list';
-	
-	public function listAction()
-	{
-		if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-			return parent::listAction();
-		}
-		
-		$tagId = $this->getRequest()->getParam('tagId');
-		$tag = Mage::getModel('tag/tag')->load($tagId);
-		
-		if ($tag->getId() && $tag->isAvailableInStore()) {
-			if (Mage::helper('searchanise')->checkEnabled()) {
-				$block_toolbar = $this->getLayout()->createBlock($this->_defaultToolbarBlock, microtime());
-				
-				Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::VIEW_TAG, $this, $block_toolbar, $tag);
-			}
-		}
-		
-		return parent::listAction();
-	}
+    protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
+    protected $_defaultListBlock    = 'catalog/product_list';
+    
+    public function listAction()
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::listAction();
+        }
+        
+        $tagId = $this->getRequest()->getParam('tagId');
+        $tag = Mage::getModel('tag/tag')->load($tagId);
+        
+        if ($tag->getId() && $tag->isAvailableInStore()) {
+            if (Mage::helper('searchanise')->checkEnabled()) {
+                $block_toolbar = $this->getLayout()->createBlock($this->_defaultToolbarBlock, microtime());
+                
+                Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::VIEW_TAG, $this, $block_toolbar, $tag);
+            }
+        }
+        
+        return parent::listAction();
+    }
 }

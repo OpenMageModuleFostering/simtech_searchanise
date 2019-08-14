@@ -13,10 +13,10 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/-->
 <config>
-	<modules>
-		<Simtech_Searchanise>
-			<active>true</active>
-			<codePool>community</codePool>
-		</Simtech_Searchanise>
-	</modules>
+    <modules>
+        <Simtech_Searchanise>
+            <active>true</active>
+            <codePool>community</codePool>
+        </Simtech_Searchanise>
+    </modules>
 </config>

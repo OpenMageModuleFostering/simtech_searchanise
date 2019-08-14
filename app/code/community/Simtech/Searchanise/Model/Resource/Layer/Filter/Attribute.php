@@ -14,27 +14,27 @@
 
 class Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute extends Mage_Catalog_Model_Resource_Layer_Filter_Attribute
 {
-	/**
-	 * Retrieve array with products counts per attribute option
-	 *
-	 * @param Mage_Catalog_Model_Layer_Filter_Attribute $filter
-	 * @return array
-	 */
-	public function getCount($filter)
-	{
-		if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-			return parent::getCount($filter);
-		}
-		
-		$collection = $filter->getLayer()->getProductCollection();
-		
-		if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult()))
-		{
-			return parent::getCount($filter);
-		}
-		
-		return $collection
-			->getSearchaniseRequest()
-			->getCountAttribute($filter);
-	}
+    /**
+     * Retrieve array with products counts per attribute option
+     *
+     * @param Mage_Catalog_Model_Layer_Filter_Attribute $filter
+     * @return array
+     */
+    public function getCount($filter)
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::getCount($filter);
+        }
+        
+        $collection = $filter->getLayer()->getProductCollection();
+        
+        if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult()))
+        {
+            return parent::getCount($filter);
+        }
+        
+        return $collection
+            ->getSearchaniseRequest()
+            ->getCountAttribute($filter);
+    }
 }

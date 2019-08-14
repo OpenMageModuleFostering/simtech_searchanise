@@ -13,35 +13,35 @@
 ****************************************************************************/
 class Simtech_Searchanise_IndexController extends Mage_Adminhtml_Controller_Action
 {
-	protected function _initAction()
-	{
-		$this->_setActiveMenu('searchanise/index/index');
-		
-		return $this;
-	}
-	
-	/*
-	 * dashboard
-	 */
-	public function indexAction()
-	{
-		$this->loadLayout();
-		
-		$this->_addContent($this->getLayout()->createBlock('core/text', 'inner-wrap-start')->setText('<div id="searchanise-settings-wrapper">'));
-		$this->_addContent(
-			$this->getLayout()->createBlock('adminhtml/template')
-				->setTemplate('searchanise/dashboard.phtml'));
-		
-		$this->_addContent($this->getLayout()->createBlock('core/text', 'inner-wrap-end')->setText('</div>'));
-		
-		$this->renderLayout();
-	}
-	
-	public function termsAction()
-	{
-		// TODO: add wrapper for non-ajax requests - LOW priority
-		// return terms text pulled from server
-		print $this->getLayout()->createBlock("searchanise/Adminhtml_Index_Terms")->toHtml();
-		exit();
-	}
+    protected function _initAction()
+    {
+        $this->_setActiveMenu('searchanise/index/index');
+        
+        return $this;
+    }
+    
+    /*
+     * dashboard
+     */
+    public function indexAction()
+    {
+        $this->loadLayout();
+        
+        $this->_addContent($this->getLayout()->createBlock('core/text', 'inner-wrap-start')->setText('<div id="searchanise-settings-wrapper">'));
+        $this->_addContent(
+            $this->getLayout()->createBlock('adminhtml/template')
+                ->setTemplate('searchanise/dashboard.phtml'));
+        
+        $this->_addContent($this->getLayout()->createBlock('core/text', 'inner-wrap-end')->setText('</div>'));
+        
+        $this->renderLayout();
+    }
+    
+    public function termsAction()
+    {
+        // TODO: add wrapper for non-ajax requests - LOW priority
+        // return terms text pulled from server
+        print $this->getLayout()->createBlock("searchanise/Adminhtml_Index_Terms")->toHtml();
+        exit();
+    }
 }

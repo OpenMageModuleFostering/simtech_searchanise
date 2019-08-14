@@ -14,20 +14,20 @@
 
 class Simtech_Searchanise_Model_Config_Data extends Mage_Adminhtml_Model_Config_Data
 {
-	/**
-	 * Save config section
-	 * Require set: section, website, store and groups
-	 *
-	 * @return Mage_Adminhtml_Model_Config_Data
-	 */
-	public function save()
-	{
-		Mage::dispatchEvent('searchanise_adminhtml_config_data_save_before', array('object' => $this));
-		
-		$ret = parent::save();
-		
-		Mage::dispatchEvent('searchanise_adminhtml_config_data_save_after', array('object' => $ret));
-		
-		return $ret;
-	}
+    /**
+     * Save config section
+     * Require set: section, website, store and groups
+     *
+     * @return Mage_Adminhtml_Model_Config_Data
+     */
+    public function save()
+    {
+        Mage::dispatchEvent('searchanise_adminhtml_config_data_save_before', array('object' => $this));
+        
+        $ret = parent::save();
+        
+        Mage::dispatchEvent('searchanise_adminhtml_config_data_save_after', array('object' => $ret));
+        
+        return $ret;
+    }
 }

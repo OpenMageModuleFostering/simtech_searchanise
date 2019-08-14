@@ -14,21 +14,21 @@
 
 class Simtech_Searchanise_ResyncController extends Mage_Adminhtml_Controller_Action
 {
-	/*
-	 * resync
-	 */
-	public function indexAction()
-	{
-		if (Mage::helper('searchanise/ApiSe')->getStatusModule() == 'Y') {
-			if (Mage::helper('searchanise/ApiSe')->signup() != true) {
-				
-				$this->_redirect(Mage::helper('searchanise/ApiSe')->getSearchaniseLink());
-			}
-			Mage::helper('searchanise/ApiSe')->queueImport();
-			
-			$this->_redirect(Mage::helper('searchanise/ApiSe')->getSearchaniseLink());
-		}
-		
-		return $this;
-	}
+    /*
+     * resync
+     */
+    public function indexAction()
+    {
+        if (Mage::helper('searchanise/ApiSe')->getStatusModule() == 'Y') {
+            if (Mage::helper('searchanise/ApiSe')->signup() != true) {
+                
+                $this->_redirect(Mage::helper('searchanise/ApiSe')->getSearchaniseLink());
+            }
+            Mage::helper('searchanise/ApiSe')->queueImport();
+            
+            $this->_redirect(Mage::helper('searchanise/ApiSe')->getSearchaniseLink());
+        }
+        
+        return $this;
+    }
 }

@@ -14,19 +14,19 @@
 
 class Simtech_Searchanise_Model_Mysql4_Queue_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
 {
-	protected function _construct()
-	{
-		parent::_construct();
-	}
-	
-	public function delete()
-	{
-		$delete_collection = $this->toArray();
-		
-		if (!empty($delete_collection['items'])) {
-			foreach ($delete_collection['items'] as $item) {
-				Mage::getModel('searchanise/queue')->load($item['queue_id'])->delete();
-			}
-		}
-	}
+    protected function _construct()
+    {
+        parent::_construct();
+    }
+    
+    public function delete()
+    {
+        $delete_collection = $this->toArray();
+        
+        if (!empty($delete_collection['items'])) {
+            foreach ($delete_collection['items'] as $item) {
+                Mage::getModel('searchanise/queue')->load($item['queue_id'])->delete();
+            }
+        }
+    }
 }

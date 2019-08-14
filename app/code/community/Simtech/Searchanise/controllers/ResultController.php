@@ -15,31 +15,31 @@ require_once("Mage/CatalogSearch/controllers/ResultController.php");
 
 class Simtech_Searchanise_ResultController extends Mage_CatalogSearch_ResultController
 {
-	protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
-	protected $_defaultListBlock    = 'catalog/product_list';
-	
-	/**
-	 * Display search result
-	 */
-	public function indexAction()
-	{
-		if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-			return parent::indexAction();
-		}
-		
-		$query = Mage::helper('catalogsearch')->getQuery();
-		/* @var $query Mage_CatalogSearch_Model_Query */
-		
-		$query->setStoreId(Mage::app()->getStore()->getId());
-		
-		if ($query->getQueryText()) {
-			if (Mage::helper('searchanise')->checkEnabled()) {
-				$block_toolbar = $this->getLayout()->createBlock($this->_defaultToolbarBlock, microtime());
-				
-				Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::TEXT_FIND, $this, $block_toolbar, $query);
-			}
-		}
-		
-		return parent::indexAction();
-	}
+    protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
+    protected $_defaultListBlock    = 'catalog/product_list';
+    
+    /**
+     * Display search result
+     */
+    public function indexAction()
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::indexAction();
+        }
+        
+        $query = Mage::helper('catalogsearch')->getQuery();
+        /* @var $query Mage_CatalogSearch_Model_Query */
+        
+        $query->setStoreId(Mage::app()->getStore()->getId());
+        
+        if ($query->getQueryText()) {
+            if (Mage::helper('searchanise')->checkEnabled()) {
+                $block_toolbar = $this->getLayout()->createBlock($this->_defaultToolbarBlock, microtime());
+                
+                Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::TEXT_FIND, $this, $block_toolbar, $query);
+            }
+        }
+        
+        return parent::indexAction();
+    }
 }

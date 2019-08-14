@@ -13,471 +13,471 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/ -->
 <config>
-	<modules>
-		<Simtech_Searchanise>
-			<version>0.1.5</version>
-		</Simtech_Searchanise>
-	</modules>
-	<frontend>
-		<routers>
-			<!-- OVERRIDE CATALOG CONTOLLERS -->
-			<catalog>
-				<args>
-				   <modules>
-					  <Simtech_Searchanise before="Mage_Catalog">Simtech_Searchanise</Simtech_Searchanise>
-				   </modules>
-				</args>
-			</catalog>
-			<!-- OVERRIDE CATALOGSEARCH CONTOLLERS -->
-			<catalogsearch>
-				<args>
-				   <modules>
-					  <Simtech_Searchanise before="Mage_CatalogSearch">Simtech_Searchanise</Simtech_Searchanise>
-				   </modules>
-				</args>
-			</catalogsearch>
-			<!-- OVERRIDE TAG CONTOLLERS -->
-			<tag>
-				<args>
-					<modules>
-						<Simtech_Searchanise before="Mage_Tag">Simtech_Searchanise</Simtech_Searchanise>
-					</modules>
-				</args>
-			</tag>
-			<!-- END -->
-			<searchanise>
-				<use>standard</use>
-				<args>
-					<module>Simtech_Searchanise</module>
-					<frontName>searchanise</frontName>
-				</args>
-			</searchanise>
-		</routers>
-		<translate>
-			<modules>
-				<Simtech_Searchanise>
-					<files>
-						<default>Simtech_Searchanise.csv</default>
-					</files>
-				</Simtech_Searchanise>
-			</modules>
-		</translate>
-		<layout>
-			<updates>
-				<searchanise>
-					<file>searchanise.xml</file>
-				</searchanise>
-			</updates>
-		</layout>
-	</frontend>
-	<adminhtml>
-		<menu>
-			<catalog>
-				<children>
-					<searchanise module="searchanise">
-						<title>Searchanise</title>
-						<action>searchanise/index/index</action>
-					</searchanise>
-				</children>
-			</catalog>
-		</menu>
-		<acl>
-			<resources>
-				<all>
-					<title>Allow Everything</title>
-				</all>
-				<admin>
-					<children>
-						<Simtech_Searchanise>
-							<title>Searchanise Module</title>
-							<sort_order>10</sort_order>
-						</Simtech_Searchanise>
-						<system>
-							<children>
-								<config>
-									<children>
-										<searchanise translate="title" module="searchanise">
-											<title>Searchanise Settings</title>
-										</searchanise>
-									</children>
-								</config>
-							</children>
-						</system>
-					</children>
-				</admin>
-			</resources>
-		</acl>
-		<translate>
-			<modules>
-				<Simtech_Searchanise>
-					<files>
-						<default>Simtech_Searchanise.csv</default>
-					</files>
-				</Simtech_Searchanise>
-			</modules>
-		</translate>
-		<layout>
-			<updates>
-				<searchanise>
-					<file>searchanise.xml</file>
-				</searchanise>
-			</updates>
-		</layout>
-	</adminhtml>
-	<global>
-		<models>
-			<!-- OVERRIDE CATALOG MODEL -->
-			<catalog>
-				<rewrite>
-					<layer>Simtech_Searchanise_Model_Layer</layer>
-					<layer_filter_category>Simtech_Searchanise_Model_Layer_Filter_Category</layer_filter_category>
-					<layer_filter_price>Simtech_Searchanise_Model_Layer_Filter_Price</layer_filter_price>
-				</rewrite>
-			</catalog>
-			<!-- END -->
-			<!-- <OVERRIDE CATALOG RESOURCE> -->
-			<catalog_resource>
-				<rewrite>
-					<product_collection>Simtech_Searchanise_Model_Resource_Product_Collection</product_collection>
-					<layer_filter_attribute>Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute</layer_filter_attribute>
-					<layer_filter_price>Simtech_Searchanise_Model_Resource_Layer_Filter_Price</layer_filter_price>
-				</rewrite>
-			</catalog_resource>
-			<!-- END -->
-			<!-- OVERRIDE CATALOGSEARCH MODEL -->
-			<catalogsearch>
-				<rewrite>
-					<layer>Simtech_Searchanise_Model_LayerCatalogSearch</layer>
-					<advanced>Simtech_Searchanise_Model_Advanced</advanced>
-				</rewrite>
-			</catalogsearch>
-			<!-- END -->
-			<!-- <OVERRIDE CATALOGSEARCH RESOURCE> -->
-			<catalogsearch_resource>
-				<rewrite>
-					<fulltext>Simtech_Searchanise_Model_Resource_Fulltext</fulltext>
-					<fulltext_collection>Simtech_Searchanise_Model_Resource_Fulltext_Collection</fulltext_collection>
-					<advanced_collection>Simtech_Searchanise_Model_Resource_Advanced_Collection</advanced_collection>
-				</rewrite>
-			</catalogsearch_resource>
-			<!-- END -->
-			<!-- OVERRIDE TAG MODEL -->
-			<tag>
-				<rewrite>
-					<tag_relation>Simtech_Searchanise_Model_Tag_Relation</tag_relation>
-				</rewrite>
-			</tag>
-			<!-- END -->
-			<!-- OVERRIDE CATALOGSEARCH MODEL -->
-			<tag_resource>
-				<rewrite>
-					<product_collection>Simtech_Searchanise_Model_Resource_Product_CollectionTag</product_collection>
-				</rewrite>
-			</tag_resource>
-			<!-- END -->
-			<!-- OVERRIDE IMPORTEXPORT MODEL -->
-			<importexport>
-				<rewrite>
-					<import_entity_product>Simtech_Searchanise_Model_Import_Entity_Product</import_entity_product>
-				</rewrite>
-			</importexport>
-			<!-- END -->
-			<!-- <OVERRIDE CORE RESOURCE> -->
-			<core_resource>
-				<rewrite>
-					<store>Simtech_Searchanise_Model_Resource_Store</store>
-				</rewrite>
-			</core_resource>
-			<!-- END -->
-			<!-- OVERRIDE ADMINHTML MODEL -->
-			<adminhtml>
-				<rewrite>
-					<config_data>Simtech_Searchanise_Model_Config_Data</config_data>
-					<layer_filter_category>Simtech_Searchanise_Model_Layer_Filter_Category</layer_filter_category>
-				</rewrite>
-			</adminhtml>
-			<!-- END -->
-			<searchanise>
-				<class>Simtech_Searchanise_Model</class>
-				<resourceModel>searchanise_mysql4</resourceModel>
-			</searchanise>
-			<searchanise_mysql4>
-				<class>Simtech_Searchanise_Model_Mysql4</class>
-				<entities>
-					<queue>
-						<table>searchanise_queue</table>
-					</queue>
-					<config>
-						<table>searchanise_config</table>
-					</config>
-				</entities>
-			</searchanise_mysql4>
-		</models>
-		<resources>
-			<searchanise_setup>
-				<setup>
-					<module>Simtech_Searchanise</module>
-					<!--<class>Simtech_Searchanise_Model_Entity_Setup</class>-->
-				</setup>
-				<connection>
-					<use>core_setup</use>
-				</connection>
-			</searchanise_setup>
-			<searchanise_write>
-				<connection>
-					<use>core_write</use>
-				</connection>
-			</searchanise_write>
-			<searchanise_read>
-				<connection>
-					<use>core_read</use>
-				</connection>
-			</searchanise_read>
-		</resources>
-		<helpers>
-			<searchanise>
-				<class>Simtech_Searchanise_Helper</class>
-			</searchanise>
-		</helpers>
-		<events>
-			<!-- CATALOG -->
-				<!-- products -->
-				<catalog_product_save_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogProductSaveBefore</method>
-						</rating>
-					</observers>
-				</catalog_product_save_before>
-				<catalog_product_save_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogProductSaveAfter</method>
-						</rating>
-					</observers>
-				</catalog_product_save_after>
-				<catalog_product_delete_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogProductDeleteBefore</method>
-						</rating>
-					</observers>
-				</catalog_product_delete_before>
-				<catalog_product_attribute_update_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogProductAttributeUpdateBefore</method>
-						</rating>
-					</observers>
-				</catalog_product_attribute_update_before>
-				<catalog_product_website_update_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogProductWebsiteUpdateBefore</method>
-						</rating>
-					</observers>
-				</catalog_product_website_update_before>
-				<!-- facets-->
-				<catalog_entity_attribute_save_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogEntityAttributeSaveBefore</method>
-						</rating>
-					</observers>
-				</catalog_entity_attribute_save_before>
-				<catalog_entity_attribute_save_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogEntityAttributeSaveAfter</method>
-						</rating>
-					</observers>
-				</catalog_entity_attribute_save_after>
-				<catalog_entity_attribute_delete_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogEntityAttributeDeleteAfter</method>
-						</rating>
-					</observers>
-				</catalog_entity_attribute_delete_after>
-				<!-- facet-categories -->
-				<catalog_category_save_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogCategorySaveBefore</method>
-						</rating>
-					</observers>
-				</catalog_category_save_before>
-				<catalog_category_save_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>catalogCategorySaveAfter</method>
-						</rating>
-					</observers>
-				</catalog_category_save_after>
-			<!-- END CATALOG-->
-			<!-- SALES -->
-				<!-- products -->
-				<sales_order_save_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>salesOrderSaveAfter</method>
-						</rating>
-					</observers>
-				</sales_order_save_after>
-			<!-- END SALES -->
-			<!-- IMPORTEXPORT -->
-				<!-- products -->
-				<searchanise_import_save_product_entity_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>searchaniseImportSaveProductEntityAfter</method>
-						</rating>
-					</observers>
-				</searchanise_import_save_product_entity_after>
-				<searchanise_import_delete_product_entity_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>searchaniseImportDeleteProductEntityAfter</method>
-						</rating>
-					</observers>
-				</searchanise_import_delete_product_entity_after>
-			<!-- END IMPORTEXPORT -->
-			<!-- CORE -->
-				<!-- store -->
-				<searchanise_core_save_store_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>searchaniseCoreSaveStoreBefore</method>
-						</rating>
-					</observers>
-				</searchanise_core_save_store_before>
-				<searchanise_core_save_store_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>searchaniseCoreSaveStoreAfter</method>
-						</rating>
-					</observers>
-				</searchanise_core_save_store_after>
-				<searchanise_core_delete_store_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>searchaniseCoreDeleteStoreAfter</method>
-						</rating>
-					</observers>
-				</searchanise_core_delete_store_after>
-				<!-- ADMINHTML-->
-				<searchanise_adminhtml_config_data_save_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>searchaniseAdminhtmlConfigDataSaveBefore</method>
-						</rating>
-					</observers>
-				</searchanise_adminhtml_config_data_save_before>
-				<searchanise_adminhtml_config_data_save_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>searchaniseAdminhtmlConfigDataSaveAfter</method>
-						</rating>
-					</observers>
-				</searchanise_adminhtml_config_data_save_after>
-			<!-- END ADMINHTML -->
-			<!-- TAG -->
-				<!-- tag -->
-				<tag_save_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>tagSaveAfter</method>
-						</rating>
-					</observers>
-				</tag_save_after>
-				<tag_delete_before>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>tagDeleteBefore</method>
-						</rating>
-					</observers>
-				</tag_delete_before>
-				<!-- tag_relation -->
-				<searchanise_tag_relation_save_after>
-					<observers>
-						<rating>
-							<class>searchanise/observer</class>
-							<method>searchaniseTagRelationSaveAfter</method>
-						</rating>
-					</observers>
-				</searchanise_tag_relation_save_after>
-			<!-- END TAG -->
-		</events>
-		<blocks>
-			<!-- OVERRIDE BLOCK CATALOG -->
-			<catalog>
-				<rewrite>
-					<product_list_toolbar>Simtech_Searchanise_Block_Product_List_Toolbar</product_list_toolbar>
-				</rewrite>
-			</catalog>
-			<!-- END -->
-			<!-- OVERRIDE BLOCK CATALOGSEARCH -->
-			<catalogsearch>
-				<rewrite>
-					<result>Simtech_Searchanise_Block_Result</result>
-				</rewrite>
-			</catalogsearch>
-			<!-- END -->
-			<!-- OVERRIDE BLOCK TAG -->
-			<tag>
-				<rewrite>
-					<product_result>Simtech_Searchanise_Block_Product_Result</product_result>
-				</rewrite>
-			</tag>
-			<!-- END -->
-		</blocks>
-	</global>
-	<default>
-		<searchanise>
-			<config>
-				<version>1.2</version>
-				<search_timeout>3</search_timeout>
-				<request_timeout>15</request_timeout>
-				<ajax_async_timeout>1</ajax_async_timeout>
-				<products_per_pass>200</products_per_pass>
-				<max_error_count>25</max_error_count>
-				<max_processing_thread>3</max_processing_thread>
-				<max_processing_time>720</max_processing_time>
-				<max_search_request_length>8000</max_search_request_length>
-				<service_url>http://www.searchanise.com</service_url>
-				<cron_enabled>1</cron_enabled>
-				<input_id_search>search</input_id_search>
-				<type_async>2</type_async>
-			</config>
-		</searchanise>
-	</default>
-	<crontab>
-		<jobs>
-			<cronjob_name>
-				<!-- runs every 1 minutes as below. Change to (0 1 * * *) to run every night at 1am -->
-				<schedule><cron_expr>*/1 * * * *</cron_expr></schedule>
-				<run><model>searchanise/observer::autoSync</model></run>
-			</cronjob_name>
-		</jobs>
-	</crontab>
+    <modules>
+        <Simtech_Searchanise>
+            <version>0.1.5</version>
+        </Simtech_Searchanise>
+    </modules>
+    <frontend>
+        <routers>
+            <!-- OVERRIDE CATALOG CONTOLLERS -->
+            <catalog>
+                <args>
+                   <modules>
+                      <Simtech_Searchanise before="Mage_Catalog">Simtech_Searchanise</Simtech_Searchanise>
+                   </modules>
+                </args>
+            </catalog>
+            <!-- OVERRIDE CATALOGSEARCH CONTOLLERS -->
+            <catalogsearch>
+                <args>
+                   <modules>
+                      <Simtech_Searchanise before="Mage_CatalogSearch">Simtech_Searchanise</Simtech_Searchanise>
+                   </modules>
+                </args>
+            </catalogsearch>
+            <!-- OVERRIDE TAG CONTOLLERS -->
+            <tag>
+                <args>
+                    <modules>
+                        <Simtech_Searchanise before="Mage_Tag">Simtech_Searchanise</Simtech_Searchanise>
+                    </modules>
+                </args>
+            </tag>
+            <!-- END -->
+            <searchanise>
+                <use>standard</use>
+                <args>
+                    <module>Simtech_Searchanise</module>
+                    <frontName>searchanise</frontName>
+                </args>
+            </searchanise>
+        </routers>
+        <translate>
+            <modules>
+                <Simtech_Searchanise>
+                    <files>
+                        <default>Simtech_Searchanise.csv</default>
+                    </files>
+                </Simtech_Searchanise>
+            </modules>
+        </translate>
+        <layout>
+            <updates>
+                <searchanise>
+                    <file>searchanise.xml</file>
+                </searchanise>
+            </updates>
+        </layout>
+    </frontend>
+    <adminhtml>
+        <menu>
+            <catalog>
+                <children>
+                    <searchanise module="searchanise">
+                        <title>Searchanise</title>
+                        <action>searchanise/index/index</action>
+                    </searchanise>
+                </children>
+            </catalog>
+        </menu>
+        <acl>
+            <resources>
+                <all>
+                    <title>Allow Everything</title>
+                </all>
+                <admin>
+                    <children>
+                        <Simtech_Searchanise>
+                            <title>Searchanise Module</title>
+                            <sort_order>10</sort_order>
+                        </Simtech_Searchanise>
+                        <system>
+                            <children>
+                                <config>
+                                    <children>
+                                        <searchanise translate="title" module="searchanise">
+                                            <title>Searchanise Settings</title>
+                                        </searchanise>
+                                    </children>
+                                </config>
+                            </children>
+                        </system>
+                    </children>
+                </admin>
+            </resources>
+        </acl>
+        <translate>
+            <modules>
+                <Simtech_Searchanise>
+                    <files>
+                        <default>Simtech_Searchanise.csv</default>
+                    </files>
+                </Simtech_Searchanise>
+            </modules>
+        </translate>
+        <layout>
+            <updates>
+                <searchanise>
+                    <file>searchanise.xml</file>
+                </searchanise>
+            </updates>
+        </layout>
+    </adminhtml>
+    <global>
+        <models>
+            <!-- OVERRIDE CATALOG MODEL -->
+            <catalog>
+                <rewrite>
+                    <layer>Simtech_Searchanise_Model_Layer</layer>
+                    <layer_filter_category>Simtech_Searchanise_Model_Layer_Filter_Category</layer_filter_category>
+                    <layer_filter_price>Simtech_Searchanise_Model_Layer_Filter_Price</layer_filter_price>
+                </rewrite>
+            </catalog>
+            <!-- END -->
+            <!-- <OVERRIDE CATALOG RESOURCE> -->
+            <catalog_resource>
+                <rewrite>
+                    <product_collection>Simtech_Searchanise_Model_Resource_Product_Collection</product_collection>
+                    <layer_filter_attribute>Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute</layer_filter_attribute>
+                    <layer_filter_price>Simtech_Searchanise_Model_Resource_Layer_Filter_Price</layer_filter_price>
+                </rewrite>
+            </catalog_resource>
+            <!-- END -->
+            <!-- OVERRIDE CATALOGSEARCH MODEL -->
+            <catalogsearch>
+                <rewrite>
+                    <layer>Simtech_Searchanise_Model_LayerCatalogSearch</layer>
+                    <advanced>Simtech_Searchanise_Model_Advanced</advanced>
+                </rewrite>
+            </catalogsearch>
+            <!-- END -->
+            <!-- <OVERRIDE CATALOGSEARCH RESOURCE> -->
+            <catalogsearch_resource>
+                <rewrite>
+                    <fulltext>Simtech_Searchanise_Model_Resource_Fulltext</fulltext>
+                    <fulltext_collection>Simtech_Searchanise_Model_Resource_Fulltext_Collection</fulltext_collection>
+                    <advanced_collection>Simtech_Searchanise_Model_Resource_Advanced_Collection</advanced_collection>
+                </rewrite>
+            </catalogsearch_resource>
+            <!-- END -->
+            <!-- OVERRIDE TAG MODEL -->
+            <tag>
+                <rewrite>
+                    <tag_relation>Simtech_Searchanise_Model_Tag_Relation</tag_relation>
+                </rewrite>
+            </tag>
+            <!-- END -->
+            <!-- OVERRIDE CATALOGSEARCH MODEL -->
+            <tag_resource>
+                <rewrite>
+                    <product_collection>Simtech_Searchanise_Model_Resource_Product_CollectionTag</product_collection>
+                </rewrite>
+            </tag_resource>
+            <!-- END -->
+            <!-- OVERRIDE IMPORTEXPORT MODEL -->
+            <importexport>
+                <rewrite>
+                    <import_entity_product>Simtech_Searchanise_Model_Import_Entity_Product</import_entity_product>
+                </rewrite>
+            </importexport>
+            <!-- END -->
+            <!-- <OVERRIDE CORE RESOURCE> -->
+            <core_resource>
+                <rewrite>
+                    <store>Simtech_Searchanise_Model_Resource_Store</store>
+                </rewrite>
+            </core_resource>
+            <!-- END -->
+            <!-- OVERRIDE ADMINHTML MODEL -->
+            <adminhtml>
+                <rewrite>
+                    <config_data>Simtech_Searchanise_Model_Config_Data</config_data>
+                    <layer_filter_category>Simtech_Searchanise_Model_Layer_Filter_Category</layer_filter_category>
+                </rewrite>
+            </adminhtml>
+            <!-- END -->
+            <searchanise>
+                <class>Simtech_Searchanise_Model</class>
+                <resourceModel>searchanise_mysql4</resourceModel>
+            </searchanise>
+            <searchanise_mysql4>
+                <class>Simtech_Searchanise_Model_Mysql4</class>
+                <entities>
+                    <queue>
+                        <table>searchanise_queue</table>
+                    </queue>
+                    <config>
+                        <table>searchanise_config</table>
+                    </config>
+                </entities>
+            </searchanise_mysql4>
+        </models>
+        <resources>
+            <searchanise_setup>
+                <setup>
+                    <module>Simtech_Searchanise</module>
+                    <!--<class>Simtech_Searchanise_Model_Entity_Setup</class>-->
+                </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </searchanise_setup>
+            <searchanise_write>
+                <connection>
+                    <use>core_write</use>
+                </connection>
+            </searchanise_write>
+            <searchanise_read>
+                <connection>
+                    <use>core_read</use>
+                </connection>
+            </searchanise_read>
+        </resources>
+        <helpers>
+            <searchanise>
+                <class>Simtech_Searchanise_Helper</class>
+            </searchanise>
+        </helpers>
+        <events>
+            <!-- CATALOG -->
+                <!-- products -->
+                <catalog_product_save_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogProductSaveBefore</method>
+                        </rating>
+                    </observers>
+                </catalog_product_save_before>
+                <catalog_product_save_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogProductSaveAfter</method>
+                        </rating>
+                    </observers>
+                </catalog_product_save_after>
+                <catalog_product_delete_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogProductDeleteBefore</method>
+                        </rating>
+                    </observers>
+                </catalog_product_delete_before>
+                <catalog_product_attribute_update_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogProductAttributeUpdateBefore</method>
+                        </rating>
+                    </observers>
+                </catalog_product_attribute_update_before>
+                <catalog_product_website_update_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogProductWebsiteUpdateBefore</method>
+                        </rating>
+                    </observers>
+                </catalog_product_website_update_before>
+                <!-- facets-->
+                <catalog_entity_attribute_save_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogEntityAttributeSaveBefore</method>
+                        </rating>
+                    </observers>
+                </catalog_entity_attribute_save_before>
+                <catalog_entity_attribute_save_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogEntityAttributeSaveAfter</method>
+                        </rating>
+                    </observers>
+                </catalog_entity_attribute_save_after>
+                <catalog_entity_attribute_delete_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogEntityAttributeDeleteAfter</method>
+                        </rating>
+                    </observers>
+                </catalog_entity_attribute_delete_after>
+                <!-- facet-categories -->
+                <catalog_category_save_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogCategorySaveBefore</method>
+                        </rating>
+                    </observers>
+                </catalog_category_save_before>
+                <catalog_category_save_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>catalogCategorySaveAfter</method>
+                        </rating>
+                    </observers>
+                </catalog_category_save_after>
+            <!-- END CATALOG-->
+            <!-- SALES -->
+                <!-- products -->
+                <sales_order_save_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>salesOrderSaveAfter</method>
+                        </rating>
+                    </observers>
+                </sales_order_save_after>
+            <!-- END SALES -->
+            <!-- IMPORTEXPORT -->
+                <!-- products -->
+                <searchanise_import_save_product_entity_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>searchaniseImportSaveProductEntityAfter</method>
+                        </rating>
+                    </observers>
+                </searchanise_import_save_product_entity_after>
+                <searchanise_import_delete_product_entity_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>searchaniseImportDeleteProductEntityAfter</method>
+                        </rating>
+                    </observers>
+                </searchanise_import_delete_product_entity_after>
+            <!-- END IMPORTEXPORT -->
+            <!-- CORE -->
+                <!-- store -->
+                <searchanise_core_save_store_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>searchaniseCoreSaveStoreBefore</method>
+                        </rating>
+                    </observers>
+                </searchanise_core_save_store_before>
+                <searchanise_core_save_store_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>searchaniseCoreSaveStoreAfter</method>
+                        </rating>
+                    </observers>
+                </searchanise_core_save_store_after>
+                <searchanise_core_delete_store_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>searchaniseCoreDeleteStoreAfter</method>
+                        </rating>
+                    </observers>
+                </searchanise_core_delete_store_after>
+                <!-- ADMINHTML-->
+                <searchanise_adminhtml_config_data_save_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>searchaniseAdminhtmlConfigDataSaveBefore</method>
+                        </rating>
+                    </observers>
+                </searchanise_adminhtml_config_data_save_before>
+                <searchanise_adminhtml_config_data_save_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>searchaniseAdminhtmlConfigDataSaveAfter</method>
+                        </rating>
+                    </observers>
+                </searchanise_adminhtml_config_data_save_after>
+            <!-- END ADMINHTML -->
+            <!-- TAG -->
+                <!-- tag -->
+                <tag_save_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>tagSaveAfter</method>
+                        </rating>
+                    </observers>
+                </tag_save_after>
+                <tag_delete_before>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>tagDeleteBefore</method>
+                        </rating>
+                    </observers>
+                </tag_delete_before>
+                <!-- tag_relation -->
+                <searchanise_tag_relation_save_after>
+                    <observers>
+                        <rating>
+                            <class>searchanise/observer</class>
+                            <method>searchaniseTagRelationSaveAfter</method>
+                        </rating>
+                    </observers>
+                </searchanise_tag_relation_save_after>
+            <!-- END TAG -->
+        </events>
+        <blocks>
+            <!-- OVERRIDE BLOCK CATALOG -->
+            <catalog>
+                <rewrite>
+                    <product_list_toolbar>Simtech_Searchanise_Block_Product_List_Toolbar</product_list_toolbar>
+                </rewrite>
+            </catalog>
+            <!-- END -->
+            <!-- OVERRIDE BLOCK CATALOGSEARCH -->
+            <catalogsearch>
+                <rewrite>
+                    <result>Simtech_Searchanise_Block_Result</result>
+                </rewrite>
+            </catalogsearch>
+            <!-- END -->
+            <!-- OVERRIDE BLOCK TAG -->
+            <tag>
+                <rewrite>
+                    <product_result>Simtech_Searchanise_Block_Product_Result</product_result>
+                </rewrite>
+            </tag>
+            <!-- END -->
+        </blocks>
+    </global>
+    <default>
+        <searchanise>
+            <config>
+                <version>1.2</version>
+                <search_timeout>3</search_timeout>
+                <request_timeout>15</request_timeout>
+                <ajax_async_timeout>1</ajax_async_timeout>
+                <products_per_pass>200</products_per_pass>
+                <max_error_count>25</max_error_count>
+                <max_processing_thread>3</max_processing_thread>
+                <max_processing_time>720</max_processing_time>
+                <max_search_request_length>8000</max_search_request_length>
+                <service_url>http://www.searchanise.com</service_url>
+                <cron_enabled>1</cron_enabled>
+                <input_id_search>search</input_id_search>
+                <type_async>2</type_async>
+            </config>
+        </searchanise>
+    </default>
+    <crontab>
+        <jobs>
+            <cronjob_name>
+                <!-- runs every 1 minutes as below. Change to (0 1 * * *) to run every night at 1am -->
+                <schedule><cron_expr>*/1 * * * *</cron_expr></schedule>
+                <run><model>searchanise/observer::autoSync</model></run>
+            </cronjob_name>
+        </jobs>
+    </crontab>
 </config>

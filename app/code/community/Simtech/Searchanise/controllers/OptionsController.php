@@ -13,16 +13,16 @@
 ****************************************************************************/
 class Simtech_Searchanise_OptionsController extends Mage_Adminhtml_Controller_Action
 {
-	const PARAM_USE_NAVIGATION = 'snize_use_navigation';
-	
-	/*
-	 * options
-	 */
-	public function indexAction()
-	{
-		$useNavigation = $this->getRequest()->getParam(self::PARAM_USE_NAVIGATION);
-		Mage::helper('searchanise/ApiSe')->setUseNavigation($useNavigation == 'true' ? true : false);
+    const PARAM_USE_NAVIGATION = 'snize_use_navigation';
+    
+    /*
+     * options
+     */
+    public function indexAction()
+    {
+        $useNavigation = $this->getRequest()->getParam(self::PARAM_USE_NAVIGATION);
+        Mage::helper('searchanise/ApiSe')->setUseNavigation($useNavigation == 'true' ? true : false);
 
-		exit;
-	}
+        exit;
+    }
 }

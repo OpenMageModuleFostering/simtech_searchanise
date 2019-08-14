@@ -14,19 +14,19 @@
 
 class Simtech_Searchanise_SignupController extends Mage_Adminhtml_Controller_Action
 {
-	/*
-	 * Signup
-	 */
-	public function indexAction()
-	{
-		if (Mage::helper('searchanise/ApiSe')->getStatusModule() == 'Y') {
-			if (Mage::helper('searchanise/ApiSe')->signup() == true) {
-				Mage::helper('searchanise/ApiSe')->queueImport();
-			}
-			
-			$this->_redirect(Mage::helper('searchanise/ApiSe')->getSearchaniseLink());
-		}
-		
-		return $this;
-	}
+    /*
+     * Signup
+     */
+    public function indexAction()
+    {
+        if (Mage::helper('searchanise/ApiSe')->getStatusModule() == 'Y') {
+            if (Mage::helper('searchanise/ApiSe')->signup() == true) {
+                Mage::helper('searchanise/ApiSe')->queueImport();
+            }
+            
+            $this->_redirect(Mage::helper('searchanise/ApiSe')->getSearchaniseLink());
+        }
+        
+        return $this;
+    }
 }

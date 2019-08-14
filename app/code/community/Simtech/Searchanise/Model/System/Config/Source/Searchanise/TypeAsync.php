@@ -13,29 +13,29 @@
 ****************************************************************************/
 class Simtech_Searchanise_Model_System_Config_Source_Searchanise_TypeAsync
 {
-	/**
-	 * Retrieve option values array
-	 *
-	 * @return array
-	*/
-	public function toOptionArray()
-	{
-		return array(
-			array('value' => 1, 'label' => Mage::helper('searchanise')->__('Cron')),
-			array('value' => 2, 'label' => Mage::helper('searchanise')->__('Ajax')),
-		);
-	}
+    /**
+     * Retrieve option values array
+     *
+     * @return array
+    */
+    public function toOptionArray()
+    {
+        return array(
+            array('value' => 1, 'label' => Mage::helper('searchanise')->__('Cron')),
+            array('value' => 2, 'label' => Mage::helper('searchanise')->__('Ajax')),
+        );
+    }
 
-	/**
-	 * Get options in "key-value" format
-	 *
-	 * @return array
-	 */
-	public function toArray()
-	{
-		return array(
-			1 => Mage::helper('searchanise')->__('Cron'),
-			2 => Mage::helper('searchanise')->__('Ajax'),
-		);
-	}
+    /**
+     * Get options in "key-value" format
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return array(
+            1 => Mage::helper('searchanise')->__('Cron'),
+            2 => Mage::helper('searchanise')->__('Ajax'),
+        );
+    }
 }

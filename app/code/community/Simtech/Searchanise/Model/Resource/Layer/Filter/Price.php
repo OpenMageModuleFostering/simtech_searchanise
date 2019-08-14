@@ -14,42 +14,42 @@
 
 class Simtech_Searchanise_Model_Resource_Layer_Filter_Price extends Mage_Catalog_Model_Resource_Layer_Filter_Price
 {
-	public function getCount($filter, $range)
-	{
-		if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-			return parent::getCount($filter, $range);
-		}
-		
-		$collection = $filter->getLayer()->getProductCollection();
-		
-		if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
-			return parent::getCount($filter, $range);
-		}
-		
-		return $collection
-			->getSearchaniseRequest()
-			->getCountAttributePrice($filter, $range);
-	}
+    public function getCount($filter, $range)
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::getCount($filter, $range);
+        }
+        
+        $collection = $filter->getLayer()->getProductCollection();
+        
+        if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
+            return parent::getCount($filter, $range);
+        }
+        
+        return $collection
+            ->getSearchaniseRequest()
+            ->getCountAttributePrice($filter, $range);
+    }
 
-	/**
-	 * Apply price range filter to product collection
-	 *
-	 * @param Mage_Catalog_Model_Layer_Filter_Price $filter
-	 * @return Mage_Catalog_Model_Resource_Layer_Filter_Price
-	*/
-	public function applyPriceRange($filter)
-	{
-		if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-			return parent::applyPriceRange($filter);
-		}
-		
-		$collection = $filter->getLayer()->getProductCollection();
-		
-		if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
-			return parent::applyPriceRange($filter);
-		}
-		// disable internal price filter
-		
-		return $this;
-	}
+    /**
+     * Apply price range filter to product collection
+     *
+     * @param Mage_Catalog_Model_Layer_Filter_Price $filter
+     * @return Mage_Catalog_Model_Resource_Layer_Filter_Price
+    */
+    public function applyPriceRange($filter)
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::applyPriceRange($filter);
+        }
+        
+        $collection = $filter->getLayer()->getProductCollection();
+        
+        if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
+            return parent::applyPriceRange($filter);
+        }
+        // disable internal price filter
+        
+        return $this;
+    }
 }

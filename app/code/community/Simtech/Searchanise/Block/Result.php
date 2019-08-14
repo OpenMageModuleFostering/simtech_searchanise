@@ -14,32 +14,32 @@
 
 class Simtech_Searchanise_Block_Result extends Mage_CatalogSearch_Block_Result
 {
-	/**
-	 * Retrieve search result count
-	 *
-	 * @return string
-	 */
-	public function getResultCount()
-	{
-		if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-			return parent::getResultCount();
-		}
-		
-		$collection = $this->_getProductCollection();
-		
-		if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
-			return parent::getResultCount();
-		}
-		
-		if (!$this->getData('result_count')) {
-			$size = $collection
-				->getSearchaniseRequest()
-				->getTotalProduct();
-			
-			$this->_getQuery()->setNumResults($size);
-			$this->setResultCount($size);
-		}
-		
-		return $this->getData('result_count');
-	}
+    /**
+     * Retrieve search result count
+     *
+     * @return string
+     */
+    public function getResultCount()
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::getResultCount();
+        }
+        
+        $collection = $this->_getProductCollection();
+        
+        if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
+            return parent::getResultCount();
+        }
+        
+        if (!$this->getData('result_count')) {
+            $size = $collection
+                ->getSearchaniseRequest()
+                ->getTotalProduct();
+            
+            $this->_getQuery()->setNumResults($size);
+            $this->setResultCount($size);
+        }
+        
+        return $this->getData('result_count');
+    }
 }
