@@ -12,7 +12,7 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
 
-// [v1.6] [v1.7]
+// [v1.6] [v1.7] [v1.8]
 class Simtech_Searchanise_Model_Resource_Product_CollectionTag extends Mage_Tag_Model_Resource_Product_Collection
 {
     /**

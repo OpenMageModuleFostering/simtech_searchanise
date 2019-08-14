@@ -17,7 +17,7 @@ class Simtech_Searchanise_Model_Searchanise extends Mage_Core_Model_Abstract
     /**
      * Mysql4_Product_Collection
      *
-     * @var Mage_Catalog_Model_Resource_Product_Collection [v1.6] [v1.7], Mage_Catalog_Model_Mysql4_Product_Collection [v1.5]
+     * @var Mage_Catalog_Model_Resource_Product_Collection [v1.6] [v1.7] [v1.8], Mage_Catalog_Model_Mysql4_Product_Collection [v1.5]
      */
     protected $_collection = null;
 

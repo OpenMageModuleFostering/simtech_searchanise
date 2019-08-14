@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>1.1.7</version>
+            <version>1.1.8</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -157,7 +157,7 @@
 
             <!-- <OVERRIDE CATALOG RESOURCE> -->
             <!-- [disabled_searchanise_search] -->
-            <!-- [v1.6] [v1.7] -->
+            <!-- [v1.6] [v1.7] [v1.8] -->
             <catalog_resource>
                 <rewrite>
                     <product_collection>Simtech_Searchanise_Model_Resource_Product_Collection</product_collection>
@@ -165,7 +165,7 @@
                     <layer_filter_price>Simtech_Searchanise_Model_Resource_Layer_Filter_Price</layer_filter_price>
                 </rewrite>
             </catalog_resource>
-            <!-- [/v1.6] [/v1.7] -->
+            <!-- [/v1.6] [/v1.7] [/v1.8] -->
             <!-- [v1.5] -->
             <catalog_resource_eav_mysql4>
                 <rewrite>
@@ -197,14 +197,14 @@
 
             <!-- <OVERRIDE CATALOGSEARCH RESOURCE> -->
             <!-- [disabled_searchanise_search] -->
-            <!-- [v1.6] [v1.7] -->
+            <!-- [v1.6] [v1.7] [v1.8] -->
             <catalogsearch_resource>
                 <rewrite>
                     <fulltext_collection>Simtech_Searchanise_Model_Resource_Fulltext_Collection</fulltext_collection>
                     <advanced_collection>Simtech_Searchanise_Model_Resource_Advanced_Collection</advanced_collection>
                 </rewrite>
             </catalogsearch_resource>
-            <!-- [/v1.6] [/v1.7] -->
+            <!-- [/v1.6] [/v1.7] [/v1.8] -->
             <!-- [v1.5] -->
             <catalogsearch_mysql4>
                 <rewrite>
@@ -225,13 +225,13 @@
             <!-- END -->
 
             <!-- OVERRIDE TAG RESOURCE -->
-            <!-- [v1.6] [v1.7] -->
+            <!-- [v1.6] [v1.7] [v1.8] -->
             <tag_resource>
                 <rewrite>
                     <product_collection>Simtech_Searchanise_Model_Resource_Product_CollectionTag</product_collection>
                 </rewrite>
             </tag_resource>
-            <!-- [/v1.6] [/v1.7] -->
+            <!-- [/v1.6] [/v1.7] [/v1.8] -->
             <!-- [v1.5]-->
             <tag_mysql4>
                 <rewrite>
@@ -249,13 +249,13 @@
             </importexport>
             <!-- END -->
             <!-- <OVERRIDE CORE RESOURCE> -->
-            <!-- [v1.6] [v1.7] -->
+            <!-- [v1.6] [v1.7] [v1.8] -->
             <core_resource>
                 <rewrite>
                     <store>Simtech_Searchanise_Model_Resource_Store</store>
                 </rewrite>
             </core_resource>
-            <!-- [/v1.6] [/v1.7] -->
+            <!-- [/v1.6] [/v1.7] [/v1.8] -->
             <!-- [v1.5] -->
             <core_mysql4>
                 <rewrite>
@@ -351,7 +351,7 @@
                         </rating>
                     </observers>
                 </catalog_product_delete_before>
-                <!-- [v1.6] [v1.7] -->
+                <!-- [v1.6] [v1.7] [v1.8] -->
                 <catalog_product_attribute_update_before>
                     <observers>
                         <rating>
@@ -360,7 +360,7 @@
                         </rating>
                     </observers>
                 </catalog_product_attribute_update_before>
-                <!-- [/v1.6] [/v1.7] -->
+                <!-- [/v1.6] [/v1.7] [/v1.8] -->
                 <!-- [v1.5] -->
                 <searchanise_product_attribute_update_before>
                     <observers>

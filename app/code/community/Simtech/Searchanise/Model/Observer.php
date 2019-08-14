@@ -35,8 +35,8 @@ class Simtech_Searchanise_Model_Observer
         if ($cronAsyncEnabled) {
             Mage::helper('searchanise/ApiSe')->log('cron is enabled', 'information');
             $result = Mage::helper('searchanise/ApiSe')->async();
-            echo $result;
-            
+            Mage::helper('searchanise/ApiSe')->log($result, 'information');
+                        
         } else {
             Mage::helper('searchanise/ApiSe')->log('cron is not enabled', 'information');
         }

@@ -31,6 +31,8 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     const WEIGHT_TEXT_AREA_ATTRIBUTES = 40;
     // </if_isSearchable>
 
+    protected static $flWithoutTags = false;
+    
     public static function getStockItem($product, $store = null)
     {
         $stockItem = null;
@@ -45,21 +47,40 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     
     public static function getTagCollection($product, $store = null)
     {
-        $tagCollection = Mage::getModel('tag/tag')
-            ->getResourceCollection()
-            ->setFlag('relation', true)
-            ->setActiveFilter();
-        
-        if (!empty($store)) {
-            $tagCollection->addStoreFilter($store->getId(), true);
-        }
+        $tagCollection = null;
 
-        return $tagCollection
-            ->addPopularity()
-            ->addStatusFilter(Mage::getModel('tag/tag')->getApprovedStatus())
-            ->addStoresVisibility()
-            ->addProductFilter($product->getId())
-            ->load();
+        if (self::$flWithoutTags) {
+            return $tagCollection;
+        }
+        
+        $tagModel = Mage::getModel('tag/tag');
+        
+        if ($tagModel) {
+            $tagCollection = $tagModel->getResourceCollection();
+        }
+        // Check if tags don't work correctly.
+        if (!$tagCollection) {
+            self::$flWithoutTags = true;
+        
+        } else {
+            $tagCollection = $tagCollection
+                ->setFlag('relation', true)
+                ->setActiveFilter();
+            
+            if (!empty($store)) {
+                $tagCollection->addStoreFilter($store->getId(), true);
+            }
+
+            $tagCollection = $tagCollection
+                ->addPopularity()
+                ->addStatusFilter(Mage::getModel('tag/tag')->getApprovedStatus())
+                ->addStoresVisibility()
+                ->addProductFilter($product->getId())
+                ->load();
+        }
+        
+        
+        return $tagCollection;
     }
 
     /**
@@ -242,6 +263,10 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     {
         $minimalPrice = '';
 
+        if ($customerGroupId != null) {
+            $product->setCustomerGroupId($customerGroupId);
+        }
+
         if ($groupPrice == null) {
             $minimalPrice = $product->getFinalPrice();
         } else {
@@ -256,11 +281,11 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 if (version_compare(Mage::getVersion(), '1.6', '<')) {
                     $minimalPrice = $_priceModel->getPrices($product, 'min');
                 // [/1.5]
-                // [1.6] [1.7]
+                // [v1.6] [v1.7] [v1.8]
                 } else {
                     $minimalPrice = $_priceModel->getTotalPrices($product, 'min', null, false);
                 }
-                // [/1.6] [/1.7]
+                // [/v1.6] [/v1.7] [/v1.8]
                 $minimalPrice = self::getProductShowPrice($product, $minimalPrice);
             }
 
@@ -335,47 +360,25 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
         // <prices>
         {
-            $defaultPrice = self::getProductMinimalPrice($product, $store, true);
-            if ($defaultPrice != '') {
-                $defaultPrice = round($defaultPrice, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
-            }
-
             $customerGroups = Mage::getModel('customer/group')->getCollection()->load();
-            // It is need for check run function getProductMinimalPrice for each customerGroup
-            $_groupPrices = $product->getData('group_price');
 
-            foreach ($customerGroups as $keCustomerGroup => $customerGroup) {
+            foreach ($customerGroups as $keyCustomerGroup => $customerGroup) {
+                // It is needed because the 'setCustomerGroupId' function works only once.
+                $productCurrentGroup = clone $product;
                 $customerGroupId = $customerGroup->getId();
-                $currentGroupPrice = null;
-                $price = $defaultPrice;
 
-                if ($_groupPrices) {
-                    foreach ($_groupPrices as $keyGroupPrice => $groupPrice) {
-                        if ($groupPrice['cust_group'] == $customerGroupId) {
-                            $currentGroupPrice = $groupPrice['price'];
-                            unset($_groupPrices[$keyGroupPrice]);
-
-                            break;
-                        }
-                    }
+                $price = self::getProductMinimalPrice($productCurrentGroup, $store, true, $customerGroupId);
+                if ($price != '') {
+                    $price = round($price, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
                 }
 
-                // if CONFIGURABLE OR GROUPED OR BUNDLE - need because child product can have groupPrices
-                if (($product->getData('type_id') == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) ||
-                    ($product->isSuper()) ||
-                    ($currentGroupPrice != null)) {
-                    $price = self::getProductMinimalPrice($product, $store, true, $customerGroupId, $currentGroupPrice);
-                    if ($price != '') {
-                        $price = round($price, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
-                    }
-                }
-
-                if ($customerGroup->getId() == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID) {
+                if ($customerGroupId == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID) {
                     $entry .= '<cs:price>' . $price . '</cs:price>'. self::XML_END_LINE;
                     $defaultPrice = $price; // default price get for not logged user
                 }
                 $label_ = Mage::helper('searchanise/ApiSe')->getLabelForPricesUsergroup() . $customerGroup->getId();
                 $entry .= '<cs:attribute name="' . $label_ . '" type="float">' . $price . '</cs:attribute>' . self::XML_END_LINE;
+                unset($productCurrentGroup);
             }
         }
         // </prices>
@@ -496,6 +499,19 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                             $entry .= '</cs:attribute>' . self::XML_END_LINE;
                     // </meta_information>
 
+                    // <dates>
+                    // It can be used for sort.
+                    } elseif ($attributeCode == 'created_at' || $attributeCode == 'updated_at') {
+                        // Fixme in the future
+                        // may add check for used_for_sort_by
+                        $dateTimestamp = Mage::getModel('core/date')->timestamp(strtotime($value));
+                        $entry .= '<cs:attribute name="' . $attributeName .'" type="int" text_search="N">';
+                        $entry .= $dateTimestamp;
+                        $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                    // Fixme in the future
+                    // Need add other date attributes ('look for' by type)
+                    // </dates>
+
                     // <unused attributes>
                         // <system_attributes>
                         } elseif ($attributeCode == 'status') {
@@ -504,8 +520,6 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                         } elseif ($attributeCode == 'required_options') {
                         } elseif ($attributeCode == 'custom_layout_update') {
                         } elseif ($attributeCode == 'tier_price') { // quantity discount
-                        } elseif ($attributeCode == 'created_at') { // date
-                        } elseif ($attributeCode == 'updated_at') { // date
                         } elseif ($attributeCode == 'image_label') {
                         } elseif ($attributeCode == 'small_image_label') {
                         } elseif ($attributeCode == 'thumbnail_label') {
@@ -650,9 +664,9 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
             $tags = self::getTagCollection($product, $store);
             
-            if ($tags) {
+            if ($tags && count($tags) > 0) {
                 foreach ($tags as $tag) {
-                    if ($tag != '') {
+                    if ($tag) {
                         $strTagIds .= '<value><![CDATA[' . $tag->getId() . ']]></value>';
                         $strTagNames .= '<value><![CDATA[' . $tag->getName() . ']]></value>';
                     }

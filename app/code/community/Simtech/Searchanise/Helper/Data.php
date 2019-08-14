@@ -262,12 +262,15 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                     if ($type == self::TEXT_FIND) {
                         unset($availableOrders['position']);
                         
-                        $availableOrders = array_merge(
-                            array('relevance' => $controller->__('Relevance')),
-                            $availableOrders
-                        );
+                        if (!isset($availableOrders['relevance'])) {
+                            $availableOrders = array_merge(
+                                array('relevance' => $controller->__('Relevance')),
+                                $availableOrders
+                            );
+                        }
                         
                         $blockToolbar->setAvailableOrders($availableOrders);
+                        $blockToolbar->setDefaultOrder('relevance');
                     } elseif ($type == self::TEXT_ADVANCED_FIND) {
                         unset($availableOrders['position']);
                         $blockToolbar->setAvailableOrders($availableOrders);
@@ -311,7 +314,10 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                 $params['sortOrder'] = $sortOrder;
             }
         }
-        
+        // Fixme in the future
+        // Need add check the 'sort By' parameter on the existence of Server.
+        // $params['sortBy']
+                
         //ADD FACETS
         $arrAttributes = array();
         $arrInputType  = array(); // need for save type $arrAttributes
@@ -424,20 +430,6 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                 if ($data) {
                     // data = tag
                     $params['restrictBy']['tag_ids'] = $data->getId();
-                }
-            }
-        }
-
-        // need for other sort_by
-        if (!empty($arrAttributes)) {
-            if ($params['sortBy'] == 'price') {
-                // nothing
-                // defined in the '<cs:price>' field
-
-            } else {
-                $id = array_search($params['sortBy'], $arrAttributes);
-                if (!empty($id)) {
-                    $params['sortBy'] = 'attribute_' . $id;
                 }
             }
         }

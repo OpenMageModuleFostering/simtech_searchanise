@@ -51,7 +51,7 @@ class Simtech_Searchanise_Model_Resource_Eav_Mysql4_Layer_Filter_Price extends M
         if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
             return parent::applyFilterToCollection($filter, $range, $index);
         }
-        // disable internal price filter
+        // Disable internal price filter.
         
         return $this;
     }

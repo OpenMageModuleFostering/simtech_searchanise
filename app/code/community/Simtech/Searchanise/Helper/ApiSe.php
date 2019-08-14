@@ -753,7 +753,7 @@ class Simtech_Searchanise_Helper_ApiSe
                     $priceTo = $numberRange * $step;
                 }                
             } else {
-                // [v1.7]
+                // [v1.7] [v1.8]
                 $arrPrice = explode('-', $dataPrice);
                 if (is_array($arrPrice) && (count($arrPrice) >= 2)) {
                     $priceFrom = (int) reset($arrPrice);

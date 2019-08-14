@@ -19,6 +19,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
     const PROFILER           = 'profiler';
     const STORE_ID           = 'store_id';
     const CHECK_DATA         = 'check_data';
+    const DISPLAY_ERRORS     = 'display_errors';
     const PRODUCT_ID         = 'product_id';
     const PRODUCT_IDS        = 'product_ids';
     const PARENT_PRIVATE_KEY = 'parent_private_key';
@@ -48,6 +49,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 
     public function indexAction()
     {
+        $visual           = $this->getRequest()->getParam(self::OUTPUT);
         $parentPrivateKey = $this->getRequest()->getParam(self::PARENT_PRIVATE_KEY);
 
         if ((empty($parentPrivateKey)) || 
@@ -64,14 +66,20 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 echo Mage::helper('core')->jsonEncode($options);
             }
         } else {
-            @ini_set('display_errors', 1);
             $resync           = $this->getRequest()->getParam(self::RESYNC);
-            $visual           = $this->getRequest()->getParam(self::OUTPUT);
             $profiler         = $this->getRequest()->getParam(self::PROFILER);
             $storeId          = $this->getRequest()->getParam(self::STORE_ID);
             $checkData        = $this->getRequest()->getParam(self::CHECK_DATA);
+            $displayErrors    = $this->getRequest()->getParam(self::DISPLAY_ERRORS);
             $productId        = $this->getRequest()->getParam(self::PRODUCT_ID);
             $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
+
+            if ($displayErrors) {
+                @error_reporting (E_ALL);
+                @ini_set('display_errors', 1);
+            } else {
+                @ini_set('display_errors', 0);
+            }
 
             if ($productId) {
                 $productIds = array($productId);
