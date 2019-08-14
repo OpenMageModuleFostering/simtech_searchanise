@@ -170,23 +170,6 @@ class Simtech_Searchanise_Block_Product_List_Toolbar extends Mage_Catalog_Block_
         return 1;
     }
     
-    public function getTotalNum()
-    {
-        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-            return parent::getTotalNum();
-        }
-        
-        $collection = $this->getCollection();
-        
-        if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
-            return parent::getTotalNum();
-        }
-        
-        return $collection
-            ->getSearchaniseRequest()
-            ->getTotalProduct();
-    }
-    
     public function setCollection($collection)
     {
         if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {

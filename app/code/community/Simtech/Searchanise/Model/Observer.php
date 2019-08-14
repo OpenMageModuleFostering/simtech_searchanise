@@ -803,4 +803,63 @@ class Simtech_Searchanise_Model_Observer
         
         return $this;
     }
+
+    public function coreBlockAbstractToHtmlBefore(Varien_Event_Observer $observer)
+    {
+        $data = $observer->getData();
+        $block = $data['block'];
+
+        if ($block instanceof Mage_CatalogSearch_Block_Layer) {
+            $filters = $block->getFilters();
+            foreach ($filters as $filter) {
+                if ($filter->getType() == 'catalog/layer_filter_price') {
+                    if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+                        break;
+                    }
+
+                    $collection = $block->getLayer()->getProductCollection();
+
+                    if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
+                        break;
+                    }             
+
+                    $newRange = $collection
+                           ->getSearchaniseRequest()
+                           ->getPriceRangeFromAttribute($filter->getAttributeModel());
+                    if (!$newRange) {
+                        break;
+                    }
+                    
+                    $rate = Mage::app()->getStore()->getCurrentCurrencyRate();
+
+                    if ((!$rate) || ($rate == 1)) {
+                        // nothing
+                    } else {
+                        $newRange *= $rate;
+                    }
+
+                    $currentCategory = Mage::registry('current_category_filter');
+                    if ($currentCategory) {
+                        $currentCategory->setFilterPriceRange($newRange);
+                    } else {
+                        $filter->getLayer()->getCurrentCategory()->setFilterPriceRange($newRange);
+                    }
+                }
+            }
+        }
+    }
+
+    public function controllerActionPredispatch(Varien_Event_Observer $observer)
+    {
+        if (Mage::helper('searchanise/ApiSe')->getSetting('redirect_to_admin_after_install')) {
+            Mage::helper('searchanise/ApiSe')->setSetting('redirect_to_admin_after_install', false);
+            if (!($observer->getData('controller_action') instanceof Simtech_Searchanise_IndexController)) {
+                $redirect_url = Mage::helper('adminhtml')->getUrl(Mage::helper('searchanise/ApiSe')->getSearchaniseLink());
+                Mage::app()->getResponse()->setRedirect($redirect_url)->sendResponse();
+                exit;
+            }
+        }
+
+        return $this;
+    }
 }

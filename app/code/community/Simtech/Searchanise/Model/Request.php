@@ -163,7 +163,7 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
             
             $this->setProductIdsString($productIdsString);
         }
-        
+
         return $this->productIdsString;
     }
     
@@ -275,7 +275,7 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
         $query = Mage::helper('searchanise/ApiSe')->buildQuery($this->getSearchParams());
         $this->setSearchParam('api_key', $this->getApiKey());
         if (Mage::helper('searchanise')->checkDebug()) {
-            Mage::helper('searchanise/ApiSe')->printR(Mage::helper('searchanise/ApiSe')->getServiceUrl() . '/search?api_key=' . $this->getApiKey() . $this->getSearchParamsStr());
+            Mage::helper('searchanise/ApiSe')->printR(Mage::helper('searchanise/ApiSe')->getServiceUrl() . '/search?api_key=' . $this->getApiKey() . '&' . $this->getSearchParamsStr());
             Mage::helper('searchanise/ApiSe')->printR($this->getSearchParams());
         }
 
@@ -370,8 +370,8 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
             return $ret;
         }
         
-        $label = 'attribute_' . $attribute->getId();
-        
+        $label = $attribute->getAttributeCode();
+
         if (!$this->checkAttributesCountLabel($label)) {
             $vals = array();
             $res = $this->getSearchResult();
@@ -540,16 +540,12 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
             $res = $this->getSearchResult();
             
             if (!empty($res['facets'])) {
-                // fixme in the future
-                // error calc count product in category
-                $arr_cat = null;
-                Mage::helper('searchanise/ApiCategories')->getAllChildrenCategories($arr_cat, $category);
-                
+                $categoryIds = Mage::helper('searchanise/ApiCategories')->getAllChildrenCategories($category->getId());
                 foreach ($res['facets'] as $facet) {
                     if ($facet['attribute'] == 'category_ids') {
                         if (!empty($facet['buckets'])) {
                             foreach ($facet['buckets'] as $bucket) {
-                                if (in_array($bucket['value'], $arr_cat)) {
+                                if (in_array($bucket['value'], $categoryIds)) {
                                     $val += $bucket['count'];
                                 }
                             }
@@ -561,10 +557,10 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
             if ($val > $this->getTotalProduct()) {
                 $val = $this->getTotalProduct();
             }
-            
+
             $this->setAttributesCountLabel($val, $label);
         }
-        
+
         return $this->getAttributesCountLabel($label);
     }
 }

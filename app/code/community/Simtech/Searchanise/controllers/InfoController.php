@@ -160,14 +160,12 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 );
 
                 if ($visual) {
-                    Mage::helper('searchanise/ApiSe')->printR(Mage::helper('core')->jsonEncode($feed), $feed);
+                    Mage::helper('searchanise/ApiSe')->printR($feed);
                 } else {
                     echo Mage::helper('core')->jsonEncode($feed);
                 }
 
             } else {
-                Mage::helper('searchanise/ApiSe')->checkImportIsDone();
-                
                 $options = Mage::helper('searchanise/ApiSe')->getAddonOptions();
                 if (!$options) {
                     $options = array();

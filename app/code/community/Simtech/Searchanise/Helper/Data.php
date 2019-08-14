@@ -125,7 +125,12 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
 
         return $check;
     }
-    
+
+    public static function getResultsFormPath()
+    {
+        return Mage::getUrl() . 'searchanise/result';
+    }
+
     protected function setDefaultSort(&$params, $type)
     {
         if (empty($params)) {
@@ -218,12 +223,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             $params['suggestions']           = 'true';
             $params['query_correction']      = 'false';
             $params['suggestionsMaxResults'] = Mage::helper('searchanise/ApiSe')->getSuggestionsMaxResults();
-
             $params['restrictBy']['visibility'] = '3|4';
-            $minQuantityDecimals = Mage::helper('searchanise/ApiSe')->getMinQuantityDecimals();
-            if (!empty($minQuantityDecimals)) {
-                $params['restrictBy']['quantity_decimals'] = $minQuantityDecimals . ',';
-            }
 
         } elseif ($type == self::TEXT_ADVANCED_FIND) {
             $params['facets']           = 'false';
@@ -231,10 +231,6 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             $params['query_correction'] = 'false';
 
             $params['restrictBy']['visibility'] = '3|4';
-            $minQuantityDecimals = Mage::helper('searchanise/ApiSe')->getMinQuantityDecimals();
-            if (!empty($minQuantityDecimals)) {
-                $params['restrictBy']['quantity_decimals'] = $minQuantityDecimals . ',';
-            }
         }
 
         if ((!empty($controller)) && (!empty($blockToolbar))) {
@@ -269,6 +265,8 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             }
 
             $sortBy = $blockToolbar->getCurrentOrder();
+            $sortBy = ($sortBy == 'name')? 'title' : $sortBy;
+            $sortBy = ($sortBy == 'sku')?  'product_code' : $sortBy;
             $sortOrder = $blockToolbar->getCurrentDirection();
 
             $maxResults = (int) $blockToolbar->getLimit();
@@ -303,46 +301,24 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             // CATEGORIES
             {
                 $arrCat = null;
-                $cat_id = (int) $controller->getRequest()->getParam('cat');
-                if (!empty($cat_id)) {
-                    $arrCat = array();
-                    $arrCat[] = $cat_id; // need if not exist children categories
-                    
-                    $categories = Mage::getModel('catalog/category')
-                        ->getCollection()
-                        ->setStoreId(Mage::app()->getStore()->getId())
-                        ->addFieldToFilter('entity_id', $cat_id)
-                        ->load()
-                        ;
-                        
-                    if (!empty($categories)) {
-                        foreach ($categories as $cat) {
-                            if (!empty($cat)) {
-                                $arrCat = $cat->getAllChildren(true);
-                            }
-                        }
-                    }
-                }
+                $categoryId = (int) $controller->getRequest()->getParam('cat');
+                if (!empty($categoryId)) {
+                    $categoryIds = Mage::helper('searchanise/ApiCategories')->getAllChildrenCategories($categoryId);
 
-                if (!empty($arrCat)) {
-                    if (is_array($arrCat)) {
-                        $params['restrictBy']['category_ids'] = implode('|', $arrCat);
-                    } else {
-                        $params['restrictBy']['category_ids'] = $arrCat;
+                    if (!empty($categoryIds)) {
+                        $params['restrictBy']['category_ids'] = implode('|', $categoryIds);
                     }
                 }
             }
             // ATTRIBUTES
             {
-                $attributes = Mage::getResourceModel('catalog/product_attribute_collection');
-                $attributes
+                $attributes = Mage::getResourceModel('catalog/product_attribute_collection')
                     ->setItemObjectClass('catalog/resource_eav_attribute')
                     ->load();
-                    
+
                 if (!empty($attributes)) {
                     foreach ($attributes as $id => $attr) {
-                        $arrAttributes[$id] = $attr->getName();
-                        $arrInputType[$id] = $attr->getData('frontend_input');
+                        $arrAttributes[$attr->getName()] = $attr;
                     }
                     
                     if (!empty($arrAttributes)) {
@@ -350,42 +326,42 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                         
                         if (!empty($requestParams)) {
                             foreach ($requestParams as $name => $val) {
-                                $id = array_search($name, $arrAttributes);
-                                if ($name && $id) {
-                                    $labelAttribute = 'attribute_' . $id;
-
+                                if (!empty($arrAttributes[$name])) {
+                                    $attr = $arrAttributes[$name];
+                                    $inputType = $attr->getData('frontend_input');
                                     if ($name == 'price') {
                                         $valPrice = Mage::helper('searchanise/ApiSe')->getPriceValueFromRequest($val);
                                         if ($valPrice != '') {
                                             $params['restrictBy']['price'] = $valPrice;
                                         }
 
-                                    } elseif ($arrInputType[$id] == 'price') {
-                                        $params['union'][$labelAttribute]['min'] = Mage::helper('searchanise/ApiSe')->getCurLabelForPricesUsergroup();
+                                    } elseif ($inputType == 'price') {
+                                        $params['union'][$name]['min'] = Mage::helper('searchanise/ApiSe')->getCurLabelForPricesUsergroup();
                                         $valPrice = Mage::helper('searchanise/ApiSe')->getPriceValueFromRequest($val);
                                         
                                         if ($valPrice != '') {
-                                            $params['restrictBy'][$labelAttribute] = $valPrice;
+                                            $params['restrictBy'][$name] = $valPrice;
                                         }
-                                        
-                                    } elseif (($arrInputType[$id] == 'text') || ($arrInputType[$id] == 'textarea')) {
+
+                                    } elseif (($inputType == 'text') || ($inputType == 'textarea')) {
                                         if ($val != '') {
                                             $val = Mage::helper('searchanise/ApiSe')->escapingCharacters($val);
 
                                             if ($val != '') {
-                                                $params['queryBy'][$arrAttributes[$id]] = $val;
+                                                $queryBy = ($name == 'name')? 'title' : $name;
+                                                $queryBy = ($name == 'sku')? 'product_code' : $queryBy;
+                                                $params['queryBy'][$queryBy] = $val;
                                             }
                                         }
 
-                                    } elseif (($arrInputType[$id] == 'select') ||
-                                              ($arrInputType[$id] == 'multiselect') ||
-                                              ($arrInputType[$id] == 'boolean')) {
+                                    } elseif (($inputType == 'select') || ($inputType == 'multiselect') || ($inputType == 'boolean')) {
                                         if ($val) {
-                                            if (is_array($val)) {
-                                                $params['restrictBy'][$labelAttribute] = implode('|', $val);
-                                            } else {
-                                                $params['restrictBy'][$labelAttribute] = $val;
+                                            $values = array();
+                                            $vals = is_array($val)? $val : array($val);
+                                            foreach ($vals as $v) {
+                                                $values[] = $attr->getFrontend()->getOption($v);
                                             }
+                                            $params['restrictBy'][$name] = implode('|', $values);
                                         }
 
                                     } else {

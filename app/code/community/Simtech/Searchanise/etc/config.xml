@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>3.1.0</version>
+            <version>3.1.1</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -61,6 +61,14 @@
                     </rating>
                 </observers>
             </controller_action_predispatch_catalogsearch_advanced_result>
+            <core_block_abstract_to_html_before>
+                <observers>
+                    <rating>
+                        <class>searchanise/observer</class>
+                        <method>coreBlockAbstractToHtmlBefore</method>
+                    </rating>
+                </observers>
+            </core_block_abstract_to_html_before>
         </events>
     </frontend>
     <admin>
@@ -127,19 +135,19 @@
                 </searchanise>
             </updates>
         </layout>
+        <!--<events>
+            <controller_action_predispatch>
+                <observers>
+                    <rating>
+                        <class>searchanise/observer</class>
+                        <method>controllerActionPredispatch</method>
+                    </rating>
+                </observers>
+            </controller_action_predispatch>
+        </events>-->
     </adminhtml>
     <global>
         <models>
-            <!-- OVERRIDE CATALOG MODEL -->
-            <!-- [disabled_searchanise_search] -->
-            <catalog>
-                <rewrite>
-                    <layer_filter_category>Simtech_Searchanise_Model_Layer_Filter_Category</layer_filter_category>
-                    <layer_filter_price>Simtech_Searchanise_Model_Layer_Filter_Price</layer_filter_price>
-                </rewrite>
-            </catalog>
-            <!-- [/disabled_searchanise_search] -->
-            <!-- END -->
 
             <!-- <OVERRIDE CATALOG RESOURCE> -->
             <!-- [disabled_searchanise_search] -->
@@ -552,6 +560,11 @@
                 </catalogsearch>
                 <!-- END -->
             <!-- [/disabled_searchanise_search] -->
+            <searchanise>
+                <rewrite>
+                    <resultwidget>Simtech_Searchanise_Block_Resultwidget</resultwidget>
+                </rewrite>
+            </searchanise>
         </blocks>
     </global>
     <default>
@@ -576,6 +589,7 @@
                 <object_async_enabled>1</object_async_enabled> 
                 <input_id_search>search</input_id_search>
                 <enabled_searchanise_search>1</enabled_searchanise_search>
+                <redirect_to_admin_after_install>1</redirect_to_admin_after_install>
             </config>
         </searchanise>
     </default>

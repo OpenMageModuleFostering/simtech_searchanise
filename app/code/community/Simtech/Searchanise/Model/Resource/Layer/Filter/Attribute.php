@@ -32,10 +32,21 @@ class Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute extends Mage_Cat
         if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
             return parent::getCount($filter);
         }
-        
-        return $collection
-            ->getSearchaniseRequest()
-            ->getCountAttribute($filter);
+
+        $optionsCount = array();
+        $options = $filter->getAttributeModel()->getFrontend()->getSelectOptions();
+        $searchaniseOptions = $collection->getSearchaniseRequest()->getCountAttribute($filter);
+        foreach ($options as $option) {
+            if (is_array($option['value'])) {
+                continue;
+            }
+
+            if (strlen($option['label']) && isset($searchaniseOptions[$option['label']])) {
+                $optionsCount[$option['value']] = $searchaniseOptions[$option['label']];
+            }
+        }
+
+        return $optionsCount;
     }
 
     /**

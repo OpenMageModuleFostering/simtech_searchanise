@@ -57,17 +57,11 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
         $restrictBy = '';
 
         $seServiceUrl = Mage::helper('searchanise/ApiSe')->getServiceUrl();
-        $priceFormat = Mage::helper('searchanise/ApiSe')->getPriceFormat($store);
         $searchWidgetsLink = Mage::helper('searchanise/ApiSe')->getSearchWidgetsLink(false);
 
         $union .= " Searchanise.AutoCmpParams.union.price = {};";
         $union .= " Searchanise.AutoCmpParams.union.price.min = '" . Mage::helper('searchanise/ApiSe')->getCurLabelForPricesUsergroup() . "';";
 
-        $minQuantityDecimals = Mage::helper('searchanise/ApiSe')->getMinQuantityDecimals();
-        if (!empty($minQuantityDecimals)) {
-            $restrictBy .= "Searchanise.AutoCmpParams.restrictBy.quantity_decimals = '{$minQuantityDecimals},';";
-        }
-        
         $showOutOfStock = Mage::getStoreConfigFlag(Mage_CatalogInventory_Helper_Data::XML_PATH_SHOW_OUT_OF_STOCK);
         if ($showOutOfStock) {
             // nothing
@@ -75,6 +69,7 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
             $restrictBy .= "Searchanise.AutoCmpParams.restrictBy.is_in_stock = '1';";
         }
 
+        $priceFormat = Mage::helper('searchanise/ApiSe')->getPriceFormat($store);
         $priceFormat['after'] = $priceFormat['after'] ? 'true' : 'false';
         
         $html .= 
@@ -94,6 +89,14 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
                 
                 Searchanise.options = {};
                 Searchanise.AdditionalSearchInputs = '#name,#description,#sku';
+
+                Searchanise.options.ResultsDiv = '#snize_results';
+                Searchanise.options.ResultsFormPath = '" . Mage::helper('searchanise')->getResultsFormPath() . "';
+                Searchanise.options.ResultsFallbackUrl = '" . $this->getUrl('catalogsearch/result') . "?q=';
+                Searchanise.ResultsParams = {};
+                Searchanise.ResultsParams.facetBy = {};
+                Searchanise.ResultsParams.facetBy.price = {};
+                Searchanise.ResultsParams.facetBy.price.type = 'slider';
 
                 Searchanise.options.PriceFormat = {
                     decimals_separator:  '" . addslashes($priceFormat['decimals_separator']) . "',

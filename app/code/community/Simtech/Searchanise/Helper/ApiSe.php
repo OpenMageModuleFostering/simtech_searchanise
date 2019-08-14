@@ -20,9 +20,6 @@ class Simtech_Searchanise_Helper_ApiSe
 
     const MAX_PAGE_SIZE = 100; // The "All" variant of the items per page menu is replaced with this value if the "Allow All Products per Page" option is active.
 
-    // const MIN_QUANTITY_DECIMALS = '0.00001';
-    const MIN_QUANTITY_DECIMALS = ''; // not activated, because Server have floaf = decimal(12,2) 
-
     const SUGGESTIONS_MAX_RESULTS = 1;
     const FLOAT_PRECISION = 2; // for server float = decimal(12,2)
     const LABEL_FOR_PRICES_USERGROUP = 'se_price_';
@@ -137,10 +134,6 @@ class Simtech_Searchanise_Helper_ApiSe
         return self::SUGGESTIONS_MAX_RESULTS;
     }
 
-    public static function getMinQuantityDecimals() {
-        return self::MIN_QUANTITY_DECIMALS;
-    }
-
     public static function getServiceUrl($onlyHttp = true)
     {
         $ret = self::getSetting('service_url');
@@ -205,6 +198,16 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function getUseFullFeed($value = null)
     {
         return self::getSetting('use_full_feed', self::CONFIG_PREFIX);
+    }
+
+    public static function setResultsWidgetEnabled($value, $store = null)
+    {
+        return self::setSettingStore('results_widget_enabled', $store, $value, self::CONFIG_PREFIX);
+    }
+
+    public static function getResultsWidgetEnabled($store = null)
+    {
+        return self::getSettingStore('results_widget_enabled', $store, self::CONFIG_PREFIX);
     }
 
     public static function setLastRequest($value = null)
@@ -634,10 +637,18 @@ class Simtech_Searchanise_Helper_ApiSe
     
     public static function showNotificationAsyncCompleted()
     {
-        if (self::checkImportIsDone()) {
-            if (self::checkNotificationAsyncComleted()) {
-                $textNotification = Mage::helper('searchanise')->__('Catalog indexation is complete. Configure Searchanise via the <a href="%s">Admin Panel</a>.', Mage::helper('searchanise/ApiSe')->getModuleUrl());
+        if (self::checkNotificationAsyncComleted()) {
+            $all_stores_done = true;
+            $stores = self::getStores();
+            foreach ($stores as $store) {
+                if (!self::checkExportStatus($store)) {
+                    $all_stores_done = false;
+                    break;
+                }
+            }
 
+            if ($all_stores_done) {
+                $textNotification = Mage::helper('searchanise')->__('Catalog indexation is complete. Configure Searchanise via the <a href="%s">Admin Panel</a>.', Mage::helper('searchanise/ApiSe')->getModuleUrl());
                 Mage::helper('searchanise/ApiSe')->setNotification('N', Mage::helper('searchanise')->__('Searchanise'), $textNotification);
                 self::setNotificationAsyncComleted(true);
             }
@@ -942,7 +953,6 @@ class Simtech_Searchanise_Helper_ApiSe
 
     public static function checkExportStatus($store = null)
     {
-        self::checkImportIsDone($store);
         return self::getExportStatus($store) == self::EXPORT_STATUS_DONE;
     }
     
@@ -1400,25 +1410,29 @@ class Simtech_Searchanise_Helper_ApiSe
                 );
 
                 Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                
-                // <schemas>
-                {
-                    $queueData = array(
-                        'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
-                        'action'   => Simtech_Searchanise_Model_Queue::ACT_DELETE_FACETS_ALL,
-                        'store_id' => $store->getId(),
-                    );
-                    Mage::getModel('searchanise/queue')->setData($queueData)->save();
 
-                    $queueData = array(
-                        'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
-                        'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES,
-                        'store_id' => $store->getId(),
-                    );
-                    
-                    Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                }
-                // </schemas>
+                $queueData = array(
+                    'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
+                    'action'   => Simtech_Searchanise_Model_Queue::ACT_GET_INFO,
+                    'store_id' => $store->getId(),
+                );
+
+                Mage::getModel('searchanise/queue')->setData($queueData)->save();
+
+                $queueData = array(
+                    'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
+                    'action'   => Simtech_Searchanise_Model_Queue::ACT_DELETE_FACETS_ALL,
+                    'store_id' => $store->getId(),
+                );
+                Mage::getModel('searchanise/queue')->setData($queueData)->save();
+
+                $queueData = array(
+                    'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
+                    'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES,
+                    'store_id' => $store->getId(),
+                );
+                
+                Mage::getModel('searchanise/queue')->setData($queueData)->save();
 
                 self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, true);
                 self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES, true);
@@ -1442,12 +1456,20 @@ class Simtech_Searchanise_Helper_ApiSe
                 if ($status == true) {
                     self::setExportStatus(self::EXPORT_STATUS_PROCESSING, $store);
                 }
-                
+
+            } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_GET_INFO) {
+                $params = array();
+                $info = self::sendRequest('/api/state/info/json', $privateKey, $params, true);
+
+                if (!empty($info['result_widget_enabled'])) {
+                    self::setResultsWidgetEnabled(($info['result_widget_enabled'] == 'Y')? true : false, $store);
+                }
+
             } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_END_FULL_IMPORT) {
                 $status = self::sendRequest('/api/state/update/json', $privateKey, array('full_import' => self::EXPORT_STATUS_DONE), true);
                 
                 if ($status == true) {
-                    self::setExportStatus(self::EXPORT_STATUS_SENT, $store);
+                    self::setExportStatus(self::EXPORT_STATUS_DONE, $store);
                     self::setLastResync(self::getTime());
                 }
 
@@ -1690,42 +1712,6 @@ class Simtech_Searchanise_Helper_ApiSe
         }
         
         return true;
-    }
-    
-    public static function checkImportIsDone($curStore = null)
-    {
-        $result = true;
-        $stores = self::getStores($curStore);
-
-        $skipTimeCheck = false;
-        
-        foreach ($stores as $store) {
-            if (self::getExportStatus($store) == self::EXPORT_STATUS_SENT && ((self::getTime() - self::getLastRequest()) > self::getRequestTimeout() || $skipTimeCheck == true)) {
-                $response = self::sendRequest('/api/state/get/json', self::getPrivateKey($store), array('status' => '', 'full_import' => ''), true);
-                $variable = self::parseStateResponse($response);
-
-                if ((!empty($variable)) && (isset($variable['status']))) {
-                    if (($variable['status'] == self::STATUS_NORMAL) && 
-                        (isset($variable['full_import'])) &&
-                        ($variable['full_import'] == self::EXPORT_STATUS_DONE)) {
-                        $skipTimeCheck = true;
-                        self::setExportStatus(self::EXPORT_STATUS_DONE, $store);
-
-                    } elseif ($variable['status'] == self::STATUS_DISABLED) {
-                        self::setExportStatus(self::EXPORT_STATUS_NONE, $store);
-                    }
-                }
-            }
-            if (self::getExportStatus($store) != self::EXPORT_STATUS_DONE) {
-                $result = false;
-            }
-        }
-        
-        if ($skipTimeCheck == true) {
-            // nothing
-        }
-
-        return $result;
     }
 
     public static function getStoreByWebsiteIds($websiteIds = array())

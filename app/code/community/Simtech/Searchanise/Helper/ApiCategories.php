@@ -196,33 +196,24 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
         return $arrCategories;
     }
 
-    /**
-     * 
-     *
-     * @param array $arr_cat
-     * @param Mage_Catalog_Model_Category $category
-     * @return array
-     */
-    public static function getAllChildrenCategories(&$arr_cat, $category, $fl_include_cur_cat = true)
+    public static function getAllChildrenCategories($catId)
     {
-        if (empty($arr_cat)) { 
-            $arr_cat = array(); 
-        }
-        
-        if (!empty($category)) {
-            if ($fl_include_cur_cat == true) { 
-                $arr_cat[] = $category->getId(); 
-            }
-            
-            $children_cat = $category->getChildrenCategories();
-            
-            if (!empty($children_cat)) {
-                foreach ($children_cat as $cat) {
-                    self::getAllChildrenCategories($arr_cat, $cat, $fl_include_cur_cat);
+        $categoryIds = array();
+        $categories = Mage::getModel('catalog/category')
+            ->getCollection()
+            ->setStoreId(Mage::app()->getStore()->getId())
+            ->addFieldToFilter('entity_id', $catId)
+            ->load()
+            ;
+
+        if (!empty($categories)) {
+            foreach ($categories as $cat) {
+                if (!empty($cat)) {
+                    $categoryIds = $cat->getAllChildren(true);
                 }
             }
         }
-        
-        return $arr_cat;
+
+        return $categoryIds;
     }
 }

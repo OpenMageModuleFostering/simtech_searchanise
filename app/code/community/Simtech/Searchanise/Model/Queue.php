@@ -46,6 +46,7 @@ class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
 
     const ACT_PREPARE_FULL_IMPORT   = 'prepare_full_import';
     const ACT_START_FULL_IMPORT     = 'start_full_import';
+    const ACT_GET_INFO              = 'update_info';
     const ACT_END_FULL_IMPORT       = 'end_full_import';
     
     public static $mainActionTypes = array(

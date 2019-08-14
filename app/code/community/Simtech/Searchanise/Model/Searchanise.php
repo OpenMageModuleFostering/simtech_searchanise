@@ -120,21 +120,14 @@ class Simtech_Searchanise_Model_Searchanise extends Mage_Core_Model_Abstract
         if (!$this->checkSearchaniseResult()) {
             return $this->_collection->setOrderParent($attribute, $dir);
         }
-        
-        if ($attribute == 'relevance') {
-            // 'relevance' always 'asc'
-            $dir = 'asc';
-            $product_ids = $this
-                ->getSearchaniseRequest()
-                ->getProductIdsString();
-            
-            if (!empty($product_ids)) {
-                $sortBy = "FIELD(e.entity_id, {$product_ids}) {$dir}";
-                $this->_collection->getSelect()->order(new Zend_Db_Expr($sortBy));
-            }
-            
-        } else {
-            return $this->_collection->setOrderParent($attribute, $dir);
+
+        $product_ids = $this
+            ->getSearchaniseRequest()
+            ->getProductIdsString();
+
+        if (!empty($product_ids)) {
+            $sortBy = "FIELD(e.entity_id, {$product_ids}) asc";
+            $this->_collection->getSelect()->order(new Zend_Db_Expr($sortBy));
         }
         
         return $this;

@@ -22,7 +22,6 @@
 <div class="snize" id="snize_container"></div>
 
 <?php
-    Mage::helper('searchanise/ApiSe')->checkImportIsDone();
     $searchaniseOptions = Mage::helper('searchanise/ApiSe')->getAddonOptions();
     
     $searchaniseOptions['options_link'] = $this->getUrl(Mage::helper('searchanise/ApiSe')->getOptionsLink());
@@ -43,7 +42,14 @@
     SearchaniseAdmin.LastRequest = '<?php echo $searchaniseOptions['last_request'];?>';
     SearchaniseAdmin.LastResync  = '<?php echo $searchaniseOptions['last_resync'];?>';
     SearchaniseAdmin.ConnectLink = '<?php echo $searchaniseOptions['connect_link'];?>';
+    SearchaniseAdmin.ShowResultsControlPanel = true;
+
     SearchaniseAdmin.AddonStatus = '<?php echo $searchaniseOptions['addon_status'];?>';
+    SearchaniseAdmin.AddonVersion = '<?php echo $searchaniseOptions['addon_version'];?>';
+
+    SearchaniseAdmin.Platform = 'magento';
+    SearchaniseAdmin.PlatformEdition = '<?php echo $searchaniseOptions['core_edition'];?>';
+    SearchaniseAdmin.PlatformVersion = '<?php echo $searchaniseOptions['core_version'];?>';
     
     SearchaniseAdmin.Engines = [];
     
