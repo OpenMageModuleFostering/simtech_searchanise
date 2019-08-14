@@ -22,6 +22,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
     const DISPLAY_ERRORS     = 'display_errors';
     const PRODUCT_ID         = 'product_id';
     const PRODUCT_IDS        = 'product_ids';
+    const BY_ITEMS           = 'by_items';
     const PARENT_PRIVATE_KEY = 'parent_private_key';
 
     /**
@@ -66,13 +67,17 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 echo Mage::helper('core')->jsonEncode($options);
             }
         } else {
-            $resync           = $this->getRequest()->getParam(self::RESYNC);
-            $profiler         = $this->getRequest()->getParam(self::PROFILER);
-            $storeId          = $this->getRequest()->getParam(self::STORE_ID);
-            $checkData        = $this->getRequest()->getParam(self::CHECK_DATA);
-            $displayErrors    = $this->getRequest()->getParam(self::DISPLAY_ERRORS);
-            $productId        = $this->getRequest()->getParam(self::PRODUCT_ID);
-            $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
+            $resync        = $this->getRequest()->getParam(self::RESYNC);
+            $profiler      = $this->getRequest()->getParam(self::PROFILER);
+            $storeId       = $this->getRequest()->getParam(self::STORE_ID);
+            $checkData     = $this->getRequest()->getParam(self::CHECK_DATA);
+            $displayErrors = $this->getRequest()->getParam(self::DISPLAY_ERRORS);
+            $productId     = $this->getRequest()->getParam(self::PRODUCT_ID);
+            $productIds    = $this->getRequest()->getParam(self::PRODUCT_IDS);
+            $byItems       = $this->getRequest()->getParam(self::BY_ITEMS);
+            if ($byItems == 'Y') {
+                Mage::helper('searchanise/ApiXML')->setIsGetProductsByItems(true);
+            }
 
             if ($displayErrors) {
                 @error_reporting(E_ALL);
@@ -94,8 +99,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
             }
 
             if ($profiler) {
-                $numberIterations = 100;
-                $old = $this->getRequest()->getParam('old');
+                $numberIterations = 1000;
 
                 if (empty($productIds)) {
                     Mage::app()->setCurrentStore(0);
@@ -103,7 +107,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 
                     $productIds = array();
                     foreach ($allProductIds as $key => $value) {
-                        $productIds [] = $value['entity_id'];
+                        $productIds[] = $value['entity_id'];
                         if (count($productIds) > $numberIterations) {
                             break;
                         }
@@ -112,24 +116,23 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 }
 
                 $n = 0;
+                $productFeeds = '';
                 while ($n < $numberIterations) {
-                    if ($old == 'Y') {
-                        $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store);
-                        // $products = Mage::helper('searchanise/ApiXML')->getProductsOld($productIds, $store);
-                    } else {
-                        $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store);
-                        // $products = Mage::helper('searchanise/ApiXML')->getProducts($productIds, $store);
-                    }
-
+                    $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store, true);
                     $n++;
                 }
 
                 echo $this->_profiler();
+                if ($visual) {
+                    Mage::helper('searchanise/ApiSe')->printR($productFeeds);
+                } else {
+                    echo Mage::helper('core')->jsonEncode($productFeeds);
+                }
             } elseif ($resync) {
                 Mage::helper('searchanise/ApiSe')->queueImport($store);
 
             } elseif (!empty($productIds)) {
-                $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store, false, $checkData);
+                $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store, $checkData);
                 if ($productFeeds) {
                     $xmlHeader = Mage::helper('searchanise/ApiXML')->getXMLHeader($store);
                     $xmlFooter = Mage::helper('searchanise/ApiXML')->getXMLFooter($store);
