@@ -191,7 +191,15 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) {
             $_priceModel  = $product->getPriceModel();
             if ($_priceModel) {
-                $minimalPrice = $_priceModel->getTotalPrices($product, 'min', null, false);
+                // [1.5]
+                if (version_compare(Mage::getVersion(), '1.6', '<')) {
+                    $minimalPrice = $_priceModel->getPrices($product, 'min');
+                // [/1.5]
+                // [1.6] [1.7]
+                } else {
+                    $minimalPrice = $_priceModel->getTotalPrices($product, 'min', null, false);
+                }
+                // [/1.6] [/1.7]                
             }
 
         } elseif ($flagWithChildrenProducts) {
