@@ -699,7 +699,8 @@ class Simtech_Searchanise_Helper_ApiSe
         } elseif ($method == Zend_Http_Client::POST) {
             $client->setParameterPost($data);
         }
-        
+
+        $response = false;
         try {
             $response = $client->request($method);
             $responseBody = $response->getBody();
@@ -1093,9 +1094,9 @@ class Simtech_Searchanise_Helper_ApiSe
                     $url = str_replace('index.php/', $base_url, $url);
                 }
                 
-                list($h, $res) = self::httpRequest(
+                list($h, $response) = self::httpRequest(
                     Zend_Http_Client::POST,
-                    self::getServiceUrl() . '/api/signup',
+                    self::getServiceUrl() . '/api/signup/json',
                     array(
                         'url'                => $url,
                         'email'              => $email,
@@ -1112,36 +1113,32 @@ class Simtech_Searchanise_Helper_ApiSe
                     self::echoConnectProgress('.');
                 }
                 
-                if (!empty($res)) {
-                    $res = self::parseResponse($res, true);
+                if (!empty($response) && $responseKeys = self::parseResponse($response, true)) {
+                    $apiKey = empty($responseKeys['keys']['api']) ? false : $responseKeys['keys']['api'];
+                    $privateKey = empty($responseKeys['keys']['private']) ? false : $responseKeys['keys']['private'];
                     
-                    if (is_object($res)) {
-                        $api_key = (string)$res->api;
-                        $privateKey = (string)$res->private;
-                        
-                        if (empty($api_key) || empty($privateKey)) {
-                            return false;
-                        }
-                        
-                        if (empty($parentPrivateKey)) {
-                            self::setParentPrivateKey($privateKey);
-                            $parentPrivateKey = $privateKey;
-                        }
-                        
-                        self::setApiKey($api_key, $store);
-                        self::setPrivateKey($privateKey, $store);
-                        
-                        $connected = true;
-                        
-                    } else {
-                        if ($showNotification == true) {
-                            self::echoConnectProgress(' Error<br />');
-                        }
-
-                        break;
+                    if (empty($apiKey) || empty($privateKey)) {
+                        return false;
                     }
+                    
+                    if (empty($parentPrivateKey)) {
+                        self::setParentPrivateKey($privateKey);
+                        $parentPrivateKey = $privateKey;
+                    }
+                    
+                    self::setApiKey($apiKey, $store);
+                    self::setPrivateKey($privateKey, $store);
+                    
+                    $connected = true;
+                    
+                } else {
+                    if ($showNotification == true) {
+                        self::echoConnectProgress(' Error<br />');
+                    }
+
+                    break;
                 }
-                
+
                 self::setExportStatus(self::EXPORT_STATUS_NONE, $store);
             }
         }
