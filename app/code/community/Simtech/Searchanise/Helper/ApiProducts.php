@@ -245,11 +245,11 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
             if (version_compare(Mage::getVersion(), '1.6', '<')) {
                 $minimalPrice = $_priceModel->getPrices($product, 'min');
             // [/1.5]
-            // [v1.6] [v1.7] [v1.8]
+            // [v1.6] [v1.7] [v1.8] [v1.9]
             } else {
                 $minimalPrice = $_priceModel->getTotalPrices($product, 'min', null, false);
             }
-            // [/v1.6] [/v1.7] [/v1.8]
+            // [/v1.6] [/v1.7] [/v1.8] [/v1.9]
             $minimalPrice = self::getProductShowPrice($product, $minimalPrice);
 
         } elseif ($product->isGrouped() && $childrenProducts) {
@@ -430,6 +430,8 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
             }
 
             $arrTextValues[$key] = $values;
+        } else {
+            $arrTextValues[$key] = array();
         }
 
         return $arrTextValues[$key];

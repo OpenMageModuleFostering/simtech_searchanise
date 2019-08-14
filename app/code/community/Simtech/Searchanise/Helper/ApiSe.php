@@ -469,10 +469,10 @@ class Simtech_Searchanise_Helper_ApiSe
 
         $versionInfo = Mage::getVersionInfo();
         $coreEdition = 'Community';
-        // [v1.7] [v1.8]
+        // [v1.7] [v1.8] [v1.9]
         if (method_exists('Mage', 'getEdition')) {
             $coreEdition = Mage::getEdition();
-        // [/v1.7] [/v1.8]
+        // [/v1.7] [/v1.8] [/v1.9]
         // [v1.5] [v1.6]
         } elseif (isset($versionInfo['minor']) && $versionInfo['minor'] > 6) {
             $coreEdition = 'Enterprise';
@@ -786,7 +786,7 @@ class Simtech_Searchanise_Helper_ApiSe
                     $priceTo = $numberRange * $step;
                 }                
             } else {
-                // [v1.7] [v1.8]
+                // [v1.7] [v1.8] [v1.9]
                 $arrPrice = explode('-', $dataPrice);
                 if (is_array($arrPrice) && (count($arrPrice) >= 2)) {
                     $priceFrom = (int) reset($arrPrice);

@@ -77,8 +77,6 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
                 {$restrictBy}
                 
                 Searchanise.options = {};
-                Searchanise.options.LabelSuggestions = 'Popular suggestions';
-                Searchanise.options.LabelProducts = 'Products';
                 Searchanise.AdditionalSearchInputs = '#name,#description,#sku';
 
                 Searchanise.options.PriceFormat = {

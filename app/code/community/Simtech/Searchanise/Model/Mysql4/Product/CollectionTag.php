@@ -18,7 +18,7 @@ class Simtech_Searchanise_Model_Mysql4_Product_CollectionTag extends Mage_Tag_Mo
     /**
      * Product Collection
      *
-     * @var Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7] [v1.8], Mage_Catalog_Model_Mysql4_Collection [v1.5]
+     * @var Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7] [v1.8] [v1.9], Mage_Catalog_Model_Mysql4_Collection [v1.5]
      */
     protected $_searchaniseCollection = null;
 
@@ -63,7 +63,7 @@ class Simtech_Searchanise_Model_Mysql4_Product_CollectionTag extends Mage_Tag_Mo
      *
      * @param string $attribute
      * @param string $dir
-     * @return Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7] [v1.8], Mage_Catalog_Model_Mysql4_Collection [v1.5]
+     * @return Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7] [v1.8] [v1.9], Mage_Catalog_Model_Mysql4_Collection [v1.5]
      */
     public function setOrder($attribute, $dir = 'desc')
     {
@@ -75,7 +75,7 @@ class Simtech_Searchanise_Model_Mysql4_Product_CollectionTag extends Mage_Tag_Mo
      *
      * @param string $attribute
      * @param string $dir
-     * @return Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7] [v1.8], Mage_Catalog_Model_Mysql4_Collection [v1.5]
+     * @return Mage_Catalog_Model_Resource_Collection [v1.6] [v1.7] [v1.8] [v1.9], Mage_Catalog_Model_Mysql4_Collection [v1.5]
      */
     public function setOrderParent($attribute, $dir = 'desc')
     {

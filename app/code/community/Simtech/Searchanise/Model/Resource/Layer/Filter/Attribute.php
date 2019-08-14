@@ -12,7 +12,7 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
 
-// [v1.6] [v1.7] [v1.8]
+// [v1.6] [v1.7] [v1.8] [v1.9]
 class Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute extends Mage_Catalog_Model_Resource_Layer_Filter_Attribute
 {
     /**
