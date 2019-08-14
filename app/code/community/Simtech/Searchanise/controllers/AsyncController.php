@@ -72,63 +72,34 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
     {
         if (Mage::helper('searchanise/ApiSe')->getStatusModule() == 'Y') {
             $checkKey = Mage::helper('searchanise')->checkPrivateKey();
-            
-            // not need because it checked in the "Async.php" block
-            // if (Mage::helper('searchanise/ApiSe')->checkStartAsync()) {
-            if (true) {
-                $check = true;
-                // code if need use httprequest
-                // $check = $this->checkNotUseHttpRequest();
-                // Mage::app('admin')->setUseSessionInUrl(false);
-                // Mage::app('customer')->setUseSessionInUrl(false); // need check: sometimes not work properly (the async script will not start)
-                // end code
 
-                if ($check) {
-                    @ignore_user_abort(true);
-                    @set_time_limit(0);
-                    if ($checkKey && $this->getRequest()->getParam('display_errors') === 'Y') {
-                        @error_reporting(E_ALL | E_STRICT);
-                        @ini_set('display_errors', 1);
-                        @ini_set('display_startup_errors', 1);
-                    } else {
-                        @error_reporting(0);
-                        @ini_set('display_errors', 0);
-                        @ini_set('display_startup_errors', 0);
-                    }
-                    $flIgnoreProcessing = false;
-                    if ($checkKey && $this->getRequest()->getParam('ignore_processing') === 'Y') {
-                        $flIgnoreProcessing = true;
-                    }
-
-                    $result = Mage::helper('searchanise/ApiSe')->async($flIgnoreProcessing);
-
-                    if ($this->checkShowSatusAsync()) {
-                        echo 'Searchanise status sync: ';
-                        echo $result;
-                    }
-                    
-                    die();
-                    
-                } else {
-                    @ignore_user_abort(false);
-                    @set_time_limit(Mage::helper('searchanise/ApiSe')->getAjaxAsyncTimeout());
-                    $asyncUrl = Mage::helper('searchanise/ApiSe')->getAsyncUrl(false, 0, false);
-
-                    Mage::helper('searchanise/ApiSe')->httpRequest(
-                        Zend_Http_Client::GET,
-                        $asyncUrl,
-                        array(
-                            Simtech_Searchanise_Helper_ApiSe::NOT_USE_HTTP_REQUEST => Simtech_Searchanise_Helper_ApiSe::NOT_USE_HTTP_REQUEST_KEY,
-                        ),
-                        array(),
-                        array(),
-                        Mage::helper('searchanise/ApiSe')->getAjaxAsyncTimeout(),
-                        2 // maxredirects
-                    );
-                }
+            @ignore_user_abort(true);
+            @set_time_limit(0);
+            if ($checkKey && $this->getRequest()->getParam('display_errors') === 'Y') {
+                @error_reporting(E_ALL | E_STRICT);
+                @ini_set('display_errors', 1);
+                @ini_set('display_startup_errors', 1);
+            } else {
+                @error_reporting(0);
+                @ini_set('display_errors', 0);
+                @ini_set('display_startup_errors', 0);
             }
+
+            $flIgnoreProcessing = false;
+            if ($checkKey && $this->getRequest()->getParam('ignore_processing') === 'Y') {
+                $flIgnoreProcessing = true;
+            }
+
+            $result = Mage::helper('searchanise/ApiSe')->async($flIgnoreProcessing);
+
+            if ($this->checkShowSatusAsync()) {
+                echo 'Searchanise status sync: ';
+                echo $result;
+            }
+
+            exit();
         }
-        
+
         return $this;
     }
 }

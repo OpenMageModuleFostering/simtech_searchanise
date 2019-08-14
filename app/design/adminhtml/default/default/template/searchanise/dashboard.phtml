@@ -55,7 +55,7 @@
     
     <?php
         if (!empty($searchaniseOptions['parent_private_key'])) {
-            $stores = Mage::app()->getStores();
+            $stores = Mage::helper('searchanise/ApiSe')->getStores();
             
             if (!empty($stores)) {
                 foreach($stores as $keyStore => $store) {

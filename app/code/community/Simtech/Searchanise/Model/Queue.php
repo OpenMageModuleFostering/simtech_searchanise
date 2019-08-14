@@ -14,17 +14,7 @@
 
 class Simtech_Searchanise_Model_Queue extends Mage_Core_Model_Abstract
 {
-    const NOT_DATA              = 'N';
-    const DATA_FACET_TAGS       = 'facet_tags';
-    const DATA_FACET_PRICES     = 'facet_prices';
-    
-    const DATA_CATEGORIES = 'categories';
-    
-    public static $dataTypes = array(
-        self::DATA_FACET_TAGS,
-        self::DATA_FACET_PRICES,
-        self::DATA_CATEGORIES,
-    );
+    const NOT_DATA                  = 'N';
     
     const ACT_PHRASE                = 'phrase';
 

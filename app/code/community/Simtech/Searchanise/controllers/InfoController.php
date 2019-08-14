@@ -136,7 +136,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 $feed = array(
                     'header'     => Mage::helper('searchanise/ApiProducts')->getHeader($store),
                     'items'      => $productFeeds,
-                    'schema'     => Mage::helper('searchanise/ApiProducts')->getSchema(Simtech_Searchanise_Model_Queue::NOT_DATA, $store),
+                    'schema'     => Mage::helper('searchanise/ApiProducts')->getSchema($store),
                     'categories' => Mage::helper('searchanise/ApiCategories')->generateCategoriesFeed(Simtech_Searchanise_Model_Queue::NOT_DATA, $store, true),
                 );
                 
@@ -156,7 +156,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 $feed = array(
                     'header'     => Mage::helper('searchanise/ApiProducts')->getHeader($store),
                     'items'      => Mage::helper('searchanise/ApiProducts')->generateProductsFeed($productIds, $store, $checkData),
-                    'schema'     => Mage::helper('searchanise/ApiProducts')->getSchema(Simtech_Searchanise_Model_Queue::NOT_DATA, $store),
+                    'schema'     => Mage::helper('searchanise/ApiProducts')->getSchema($store),
                     'categories' => Mage::helper('searchanise/ApiCategories')->generateCategoriesFeed($categoryIds, $store, $checkData),
                     'pages'      => Mage::helper('searchanise/ApiPages')->generatePagesFeed($pageIds, $store, $checkData),
                 );

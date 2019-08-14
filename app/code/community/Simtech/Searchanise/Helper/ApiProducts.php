@@ -455,7 +455,7 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 
             if ($textValues != '') {
                 if ($inputType == 'multiselect') {
-                    $values = explode(',', $textValues);
+                    $values = array_map('trim', explode(',', $textValues));
                 } else {
                     $values[] = $textValues;
                 }
@@ -507,49 +507,20 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         return $values;
     }
 
-    public static function getProductAttributes($attributeIds = Simtech_Searchanise_Model_Queue::NOT_DATA, $store = null, $isPrice = false)
+    public static function getProductAttributes()
     {
-        if ($attributeIds === Simtech_Searchanise_Model_Queue::NOT_DATA) {
-            static $allAttributes;
+        static $allAttributes;
 
-            if (!isset($allAttributes)) {
-                $allAttributes = Mage::getResourceModel('catalog/product_attribute_collection');
-                $allAttributes
-                    ->setItemObjectClass('catalog/resource_eav_attribute')
-                    // ->setOrder('position', 'ASC') // not need, because It will slow with "order"
-                    ->load();
-            }
-
-            return $allAttributes;
+        if (!isset($allAttributes)) {
+            $allAttributes = Mage::getResourceModel('catalog/product_attribute_collection')->setItemObjectClass('catalog/resource_eav_attribute')->load();
         }
 
-        $attributes = Mage::getResourceModel('catalog/product_attribute_collection')
-            ->setItemObjectClass('catalog/resource_eav_attribute');
-
-        // fixme in the future
-        // need delete
-        // if ($store) {
-            // $filters->addStoreLabel($store->getId());
-        // }
-        // end fixme
-
-        if (is_array($attributeIds)) {
-            $attributes->addFieldToFilter('main_table.attribute_id', array('in' => $attributeIds));
-        } else {
-            $attributes->addFieldToFilter('main_table.attribute_id', array('eq' => $attributeIds));
-        }
-        if ($isPrice) {
-            $attributes->addFieldToFilter('main_table.frontend_input', array('eq' => 'price'));
-        }
-        
-        $attributes->load();
-
-        return $attributes;        
+        return $allAttributes;
     }
 
     private static function _generateProductAttributes(&$item, $product, $childrenProducts = null, $unitedProducts = null, $store = null)
     {
-        $attributes = self::getProductAttributes(Simtech_Searchanise_Model_Queue::NOT_DATA, $store);
+        $attributes = self::getProductAttributes();
 
         if ($attributes) {
             $requiredAttributes = self::_getRequiredAttributes();
@@ -1239,11 +1210,6 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 
         return $items;
     }
-    
-    public static function getSchemaPrices($store = null)
-    {
-        return self::getSchema(null, $store, true);
-    }
 
     public static function getSchemaCustomerGroupsPrices()
     {
@@ -1263,78 +1229,57 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         return $items;
     }
 
-    public static function getSchemaCategories($store)
+    public static function getSchema($store)
     {
-		$category_schema = array();
-        if (Mage::helper('searchanise/ApiSe')->getResultsWidgetEnabled($store)) {
-            $category_schema[] = array(
-                'name'        => 'categories',
-                'title'       => Mage::helper('catalog')->__('Category'),
-                'type'        => 'text',
-                'weight'      => self::WEIGHT_CATEGORIES,
-                'text_search' => 'Y',
-                'facet'       => self::_generateFacetFromCustom(Mage::helper('catalog')->__('Category'), 10, 'categories', 'select'),
-            );
-        } else {
-            $category_schema[] = array(
-                'name'        => 'categories',
-                'title'       => Mage::helper('catalog')->__('Category'),
-                'type'        => 'text',
-                'weight'      => self::WEIGHT_CATEGORIES,
-                'text_search' => 'Y',
-            );
-            $category_schema[] = array(
-                'name'        => 'category_ids',
-                'title'       => Mage::helper('catalog')->__('Category') . ' - IDs',
-                'type'        => 'text',
-                'weight'      => 0,
-                'text_search' => 'N',
-                'facet'       => self::_generateFacetFromCustom(Mage::helper('catalog')->__('Category'), 10, 'category_ids', 'select'),
-            );
-        }
+        static $schemas;
 
-        return $category_schema;
-    }
+        if (!isset($schemas[$store->getId()])) {
+            Mage::app()->setCurrentStore($store->getId());
 
-    public static function getSchemaTags()
-    {
-        return array(
-            array(
+            $schema = self::getSchemaCustomerGroupsPrices();
+
+            if (Mage::helper('searchanise/ApiSe')->getResultsWidgetEnabled($store)) {
+                $schema[] = array(
+                    'name'        => 'categories',
+                    'title'       => Mage::helper('catalog')->__('Category'),
+                    'type'        => 'text',
+                    'weight'      => self::WEIGHT_CATEGORIES,
+                    'text_search' => 'Y',
+                    'facet'       => self::_generateFacetFromCustom(Mage::helper('catalog')->__('Category'), 10, 'categories', 'select'),
+                );
+                $schema[] = array(
+                    'name'        => 'category_ids',
+                    'title'       => Mage::helper('catalog')->__('Category') . ' - IDs',
+                    'type'        => 'text',
+                    'weight'      => 0,
+                    'text_search' => 'N',
+                );
+            } else {
+                $schema[] = array(
+                    'name'        => 'categories',
+                    'title'       => Mage::helper('catalog')->__('Category'),
+                    'type'        => 'text',
+                    'weight'      => self::WEIGHT_CATEGORIES,
+                    'text_search' => 'Y',
+                );
+                $schema[] = array(
+                    'name'        => 'category_ids',
+                    'title'       => Mage::helper('catalog')->__('Category') . ' - IDs',
+                    'type'        => 'text',
+                    'weight'      => 0,
+                    'text_search' => 'N',
+                    'facet'       => self::_generateFacetFromCustom(Mage::helper('catalog')->__('Category'), 10, 'category_ids', 'select'),
+                );
+            }
+
+            $schema[] = array(
                 'name'        => 'tags',
                 'title'       => Mage::helper('catalog')->__('Product Tags'),
                 'type'        => 'text',
                 'weight'      => self::WEIGHT_TAGS,
                 'text_search' => 'Y',
-            )
-        );
-    }
+            );
 
-    public static function getSchema($attributeIds = Simtech_Searchanise_Model_Queue::NOT_DATA, $store, $isPrice = false)
-    {
-        static $schemas;
-
-        if (isset($schemas[$store->getId()])) {
-            return $schemas[$store->getId()];
-        }
-
-        Mage::app()->setCurrentStore($store->getId());
-
-        $schema = array();
-
-        if ($attributeIds === Simtech_Searchanise_Model_Queue::NOT_DATA) {
-            $schema = self::getSchemaCustomerGroupsPrices();
-
-            if ($items = self::getSchemaCategories($store)) {
-                foreach ($items as $keyItem => $item) {
-                    $schema[] = $item;
-                }
-            }
-
-            if ($items = self::getSchemaTags()) {
-                foreach ($items as $keyItem => $item) {
-                    $schema[] = $item;
-                }
-            }
             $schema[] = array(
                 'name'        => 'is_in_stock',
                 'title'       => Mage::helper('catalog')->__('Stock Availability'),
@@ -1342,21 +1287,21 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
                 'weight'      => 0,
                 'text_search' => 'N',
             );
-        }
 
-        if ($attributes = self::getProductAttributes($attributeIds, $store, $isPrice)) {
-            foreach ($attributes as $attribute) {
-                if ($items = self::getSchemaAttribute($attribute, $store)) {
-                    foreach ($items as $keyItem => $item) {
-                        $schema[] = $item;
+            if ($attributes = self::getProductAttributes()) {
+                foreach ($attributes as $attribute) {
+                    if ($items = self::getSchemaAttribute($attribute, $store)) {
+                        foreach ($items as $keyItem => $item) {
+                            $schema[] = $item;
+                        }
                     }
                 }
             }
+
+            $schemas[$store->getId()] = $schema;
         }
 
-        $schemas[$store->getId()] = $schema;
-
-        return $schema;
+        return $schemas[$store->getId()];
     }
     
     public static function getHeader($store = null)

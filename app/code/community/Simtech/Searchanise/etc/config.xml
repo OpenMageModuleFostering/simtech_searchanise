@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>3.1.3</version>
+            <version>3.1.4</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -580,7 +580,7 @@
                 <pages_per_pass>50</pages_per_pass>
                 <max_error_count>25</max_error_count>
                 <max_processing_thread>3</max_processing_thread>
-                <max_processing_time>720</max_processing_time>
+                <max_processing_time>120</max_processing_time>
                 <max_search_request_length>8000</max_search_request_length>
                 <service_url>http://www.searchanise.com</service_url>
                 <cron_async_enabled>1</cron_async_enabled>

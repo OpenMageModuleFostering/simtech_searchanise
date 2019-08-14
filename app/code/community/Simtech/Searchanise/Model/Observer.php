@@ -572,46 +572,6 @@ class Simtech_Searchanise_Model_Observer
      */
     public function searchaniseAdminhtmlConfigDataSaveAfter(Varien_Event_Observer $observer)
     {
-        $model = $observer->getData('object');
-        $section = $model->getSection();
-        $storesIds = $model->getStore();
-        $website = $model->getWebsite();
-        
-        if (empty($storesIds)) {
-            if (!empty($website)) {
-                $storesIds = Mage::helper('searchanise/ApiSe')->getStoreByWebsiteCodes($website);
-            }
-        }
-        
-        $stores = Mage::helper('searchanise/ApiSe')->getStores(null, $storesIds);
-        
-        if (!empty($stores)) {
-            if ($section == 'catalog') {
-                foreach ($stores as $k => $store) {                   
-                    if ($attributes = Mage::helper('searchanise/ApiProducts')->getProductAttributes(null, $store, true)) {
-                        foreach ($attributes as $attribute) {
-                            Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES, $attribute->getId(), $store);
-                        }
-                    }
-
-                    // change facet-prices
-                    {
-                        $queueData = array(
-                            'data'     => serialize(Simtech_Searchanise_Model_Queue::DATA_FACET_PRICES),
-                            'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES,
-                            'store_id' => $store->getId(),
-                        );
-                        
-                        Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                    }
-                }
-                
-            // Change status module
-            } elseif ($section == 'advanced') {
-                
-            }
-        }
-        
         return $this;
     }
     

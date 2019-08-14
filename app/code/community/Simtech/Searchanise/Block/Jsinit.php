@@ -56,12 +56,13 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
         $seServiceUrl = Mage::helper('searchanise/ApiSe')->getServiceUrl();
         $searchWidgetsLink = Mage::helper('searchanise/ApiSe')->getSearchWidgetsLink(false);
 
-        $restrictBy = '';
+        $restrictBy = $resultsRestrictBy = '';
         $showOutOfStock = Mage::getStoreConfigFlag(Mage_CatalogInventory_Helper_Data::XML_PATH_SHOW_OUT_OF_STOCK);
         if ($showOutOfStock) {
             // nothing
         } else {
             $restrictBy .= "Searchanise.AutoCmpParams.restrictBy.is_in_stock = '1';";
+            $resultsRestrictBy .= "Searchanise.ResultsParams.restrictBy.is_in_stock = '1';";
         }
 
         $priceFormat = Mage::helper('searchanise/ApiSe')->getPriceFormat($store);
@@ -101,7 +102,9 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
                 Searchanise.ResultsParams.union.price.min = '" . Mage::helper('searchanise/ApiSe')->getCurLabelForPricesUsergroup() . "';
 
                 Searchanise.ResultsParams.restrictBy = {};
+                Searchanise.ResultsParams.restrictBy.status = '1';
                 Searchanise.ResultsParams.restrictBy.visibility = '3|4';
+                {$resultsRestrictBy}
 
                 Searchanise.options.PriceFormat = {
                     decimals_separator:  '" . addslashes($priceFormat['decimals_separator']) . "',

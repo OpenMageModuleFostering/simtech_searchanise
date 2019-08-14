@@ -178,10 +178,15 @@ class Simtech_Searchanise_Helper_ApiSe
 
     public static function checkSearchaniseResult($searchaniseRequest = null, $store = null)
     {
-        if ((self::getStatusModule($store) == 'Y') &&
-            (self::checkExportStatus($store)) &&
-            (!empty($searchaniseRequest))) {
+        if (empty($store)) {
+            $store = Mage::app()->getStore();
+        }
 
+        if (!empty(self::$seStoreIds) && !in_array($store->getId(), self::$seStoreIds)) {
+            return false;
+        }
+
+        if (self::getStatusModule($store) == 'Y' && self::checkExportStatus($store) && !empty($searchaniseRequest)) {
             if ($searchaniseRequest === true) {
                 return true;
             }
@@ -601,7 +606,7 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function getApiKeys()
     {
         $ret = array();
-        $stores = Mage::app()->getStores();
+        $stores = self::getStores();
         
         if ($stores != '') {
             foreach ($stores as $k_store => $store) {
@@ -1038,7 +1043,7 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function getPrivateKeys()
     {
         $ret = array();
-        $stores = Mage::app()->getStores();
+        $stores = self::getStores();
         
         if (!empty($stores)) {
             foreach ($stores as $k_store => $store) {
@@ -1450,14 +1455,6 @@ class Simtech_Searchanise_Helper_ApiSe
                 );
                 Mage::getModel('searchanise/queue')->setData($queueData)->save();
 
-                $queueData = array(
-                    'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
-                    'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES,
-                    'store_id' => $store->getId(),
-                );
-                
-                Mage::getModel('searchanise/queue')->setData($queueData)->save();
-
                 self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, true);
                 self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES, true);
                 self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PAGES, true);
@@ -1511,6 +1508,7 @@ class Simtech_Searchanise_Helper_ApiSe
                     if (!empty($items)) {
                         $dataForSend = array(
                             'header' => $header,
+                            'schema' => Mage::helper('searchanise/ApiProducts')->getSchema($store),
                             'items'  => $items,
                         );
                     }
@@ -1531,28 +1529,14 @@ class Simtech_Searchanise_Helper_ApiSe
                             'pages'  => $pages,
                         );
                     }
+
                 } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES) {
-                    $schema = null;
+                    $schema = Mage::helper('searchanise/ApiProducts')->getSchema($store);
 
-                    if ($data == Simtech_Searchanise_Model_Queue::DATA_CATEGORIES) {
-                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaCategories($store);
-                        
-                    } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_PRICES) {
-                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaPrices($store);
-
-                    } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_TAGS) {
-                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaTags();
-                        
-                    } else {
-                        $schema = Mage::helper('searchanise/ApiProducts')->getSchema($data, $store);
-                    }
-                    
-                    if (!empty($schema)) {
-                        $dataForSend = array(
-                            'header' => $header,
-                            'schema' => $schema,
-                        );
-                    }
+                    $dataForSend = array(
+                        'header' => $header,
+                        'schema' => $schema,
+                    );
                 }
 
                 if (!empty($dataForSend)) {
@@ -1625,8 +1609,7 @@ class Simtech_Searchanise_Helper_ApiSe
     
     public static function echoConnectProgress($text)
     {
-        // It is commented out as far as the warning occurs
-        //~ echo $text;
+        echo $text;
     }
     
     public static function sendAddonStatusRequest($status = 'enabled', $curStore = NULL)
