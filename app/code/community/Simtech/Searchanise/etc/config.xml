@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>3.1.1</version>
+            <version>3.1.2</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -587,7 +587,7 @@
                 <ajax_async_enabled>0</ajax_async_enabled>
                 <!-- default sync init method -->
                 <object_async_enabled>1</object_async_enabled> 
-                <input_id_search>search</input_id_search>
+                <search_input_selector>#search,form input[name="q"]</search_input_selector>
                 <enabled_searchanise_search>1</enabled_searchanise_search>
                 <redirect_to_admin_after_install>1</redirect_to_admin_after_install>
             </config>

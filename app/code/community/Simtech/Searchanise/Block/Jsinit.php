@@ -18,9 +18,9 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
     {
         $html = '';
 
-        $inputId = Mage::helper('searchanise/ApiSe')->getInputIdSearch();
-        if (empty($inputId)) {
-            $inputId = 'search';
+        $searchInputSelector = Mage::helper('searchanise/ApiSe')->getSearchInputSelector();
+        if (empty($searchInputSelector)) {
+            $searchInputSelector = '#search';
         }
 
         //
@@ -32,8 +32,8 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
             try {
                 Prototype && Prototype.Version && Event && Event.observe && Event.observe(window, 'load', function()
                 {
-                    if ($$('input#{$inputId}').length) {
-                        $$('input#{$inputId}')[0].stopObserving('keydown');
+                    if ($$('{$searchInputSelector}').length) {
+                        $$('{$searchInputSelector}')[0].stopObserving('keydown');
                     }
                 });
             } catch (e) {}
@@ -53,15 +53,10 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
             return $html;
         }
 
-        $union = 'Searchanise.AutoCmpParams.union = {};';
-        $restrictBy = '';
-
         $seServiceUrl = Mage::helper('searchanise/ApiSe')->getServiceUrl();
         $searchWidgetsLink = Mage::helper('searchanise/ApiSe')->getSearchWidgetsLink(false);
 
-        $union .= " Searchanise.AutoCmpParams.union.price = {};";
-        $union .= " Searchanise.AutoCmpParams.union.price.min = '" . Mage::helper('searchanise/ApiSe')->getCurLabelForPricesUsergroup() . "';";
-
+        $restrictBy = '';
         $showOutOfStock = Mage::getStoreConfigFlag(Mage_CatalogInventory_Helper_Data::XML_PATH_SHOW_OUT_OF_STOCK);
         if ($showOutOfStock) {
             // nothing
@@ -78,10 +73,13 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
                 Searchanise = {};
                 Searchanise.host        = '{$seServiceUrl}';
                 Searchanise.api_key     = '{$apiKey}';
-                Searchanise.SearchInput = '#{$inputId}';
+                Searchanise.SearchInput = '{$searchInputSelector}';
                 
                 Searchanise.AutoCmpParams = {};
-                {$union}
+                Searchanise.AutoCmpParams.union = {};
+                Searchanise.AutoCmpParams.union.price = {};
+                Searchanise.AutoCmpParams.union.price.min = '" . Mage::helper('searchanise/ApiSe')->getCurLabelForPricesUsergroup() . "';
+
                 Searchanise.AutoCmpParams.restrictBy = {};
                 Searchanise.AutoCmpParams.restrictBy.status = '1';
                 Searchanise.AutoCmpParams.restrictBy.visibility = '3|4';
@@ -97,6 +95,13 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
                 Searchanise.ResultsParams.facetBy = {};
                 Searchanise.ResultsParams.facetBy.price = {};
                 Searchanise.ResultsParams.facetBy.price.type = 'slider';
+
+                Searchanise.ResultsParams.union = {};
+                Searchanise.ResultsParams.union.price = {};
+                Searchanise.ResultsParams.union.price.min = '" . Mage::helper('searchanise/ApiSe')->getCurLabelForPricesUsergroup() . "';
+
+                Searchanise.ResultsParams.restrictBy = {};
+                Searchanise.ResultsParams.restrictBy.visibility = '3|4';
 
                 Searchanise.options.PriceFormat = {
                     decimals_separator:  '" . addslashes($priceFormat['decimals_separator']) . "',

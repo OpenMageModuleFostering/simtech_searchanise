@@ -100,9 +100,9 @@ class Simtech_Searchanise_Helper_ApiSe
         return self::getSetting('object_async_enabled');
     }
     
-    public static function getInputIdSearch()
+    public static function getSearchInputSelector()
     {
-        return self::getSetting('input_id_search');
+        return self::getSetting('search_input_selector');
     }
 
     public static function getEnabledSearchaniseSearch()
@@ -683,7 +683,7 @@ class Simtech_Searchanise_Helper_ApiSe
         return true;
     }
     
-    public static function httpRequest($method = Zend_Http_Client::POST, $url = '', $data = array(), $cookies = array(), $basicAuth = array(), $timeout = 0, $maxredirects = 5)
+    public static function httpRequest($method = Zend_Http_Client::POST, $url = '', $data = array(), $cookies = array(), $basicAuth = array(), $timeout = 1, $maxredirects = 5)
     {
         if (Mage::helper('searchanise')->checkDebug(true)) {
             Mage::helper('searchanise/ApiSe')->printR('httpRequest',
@@ -1511,10 +1511,10 @@ class Simtech_Searchanise_Helper_ApiSe
                     $schema = null;
 
                     if ($data == Simtech_Searchanise_Model_Queue::DATA_CATEGORIES) {
-                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaCategories();
+                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaCategories($store);
                         
                     } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_PRICES) {
-                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaPrices();
+                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaPrices($store);
 
                     } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_TAGS) {
                         $schema = Mage::helper('searchanise/ApiProducts')->getSchemaTags();

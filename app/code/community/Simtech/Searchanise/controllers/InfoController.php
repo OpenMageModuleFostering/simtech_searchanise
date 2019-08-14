@@ -14,7 +14,8 @@
 
 class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Action
 {
-    const RESYNC             = 'resync'; 
+    const RESYNC             = 'resync';
+    const MODULES            = 'modules';
     const OUTPUT             = 'visual';
     const PROFILER           = 'profiler';
     const STORE_ID           = 'store_id';
@@ -70,6 +71,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
             }
         } else {
             $resync        = $this->getRequest()->getParam(self::RESYNC);
+            $modules       = $this->getRequest()->getParam(self::MODULES);
             $profiler      = $this->getRequest()->getParam(self::PROFILER);
             $storeId       = $this->getRequest()->getParam(self::STORE_ID);
             $checkData     = $this->getRequest()->getParam(self::CHECK_DATA);
@@ -177,7 +179,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 $options['ajax_async_enabled'] = Mage::helper('searchanise/ApiSe')->checkAjaxAsync();
                 $options['object_async_enabled'] = Mage::helper('searchanise/ApiSe')->checkObjectAsync();
 
-                $options['input_id'] = Mage::helper('searchanise/ApiSe')->getInputIdSearch();
+                $options['search_input_selector'] = Mage::helper('searchanise/ApiSe')->getSearchInputSelector();
                 $options['search_enabled'] = Mage::helper('searchanise/ApiSe')->getEnabledSearchaniseSearch();
 
                 $options['use_full_feed'] = Mage::helper('searchanise/ApiSe')->getUseFullFeed();
@@ -197,51 +199,50 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
                 }
                 $options['memory_limit_after'] = ini_get('memory_limit');
 
-                $models = array(
-                    'catalog/layer_filter_category' => 'Simtech_Searchanise_Model_Layer_Filter_Category',
-                    'catalog/layer_filter_price' => 'Simtech_Searchanise_Model_Layer_Filter_Price',
-                    'catalog_resource/product_collection' => 'Simtech_Searchanise_Model_Resource_Product_Collection',
-                    'catalog_resource/layer_filter_attribute' => 'Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute',
-                    'catalog_resource/layer_filter_price' => 'Simtech_Searchanise_Model_Resource_Layer_Filter_Price',
-                    'catalog_resource_eav_mysql4/layer_filter_attribute' => 'Simtech_Searchanise_Model_Resource_Eav_Mysql4_Layer_Filter_Attribute',
-                    'catalog_resource_eav_mysql4/layer_filter_price' => 'Simtech_Searchanise_Model_Resource_Eav_Mysql4_Layer_Filter_Price',
-                    'catalog_resource_eav_mysql4/product_action' => 'Simtech_Searchanise_Model_Resource_Eav_Mysql4_Product_Action',
-                    'catalogsearch/advanced' => 'Simtech_Searchanise_Model_Advanced',
-                    'catalogsearch_resource/fulltext_collection' => 'Simtech_Searchanise_Model_Resource_Fulltext_Collection',
-                    'catalogsearch_resource/advanced_collection' => 'Simtech_Searchanise_Model_Resource_Advanced_Collection',
-                    'tag/tag_relation' => 'Simtech_Searchanise_Model_Tag_Relation',
-                    'importexport/import_entity_product' => 'Simtech_Searchanise_Model_Import_Entity_Product',
-                    'core_resource/store' => 'Simtech_Searchanise_Model_Resource_Store',
-                    'core_mysql4/store' => 'Simtech_Searchanise_Model_Mysql4_Store',
-                    'adminhtml/config_data' => 'Simtech_Searchanise_Model_Config_Data',
-                    'adminhtml/layer_filter_category' => 'Simtech_Searchanise_Model_Layer_Filter_Category',
-                );
+                if ($modules) {
+                    $models = array(
+                        'catalog_resource/product_collection' => 'Simtech_Searchanise_Model_Resource_Product_Collection',
+                        'catalog_resource/layer_filter_attribute' => 'Simtech_Searchanise_Model_Resource_Layer_Filter_Attribute',
+                        'catalog_resource/layer_filter_price' => 'Simtech_Searchanise_Model_Resource_Layer_Filter_Price',
+                        'catalog_resource_eav_mysql4/layer_filter_attribute' => 'Simtech_Searchanise_Model_Resource_Eav_Mysql4_Layer_Filter_Attribute',
+                        'catalog_resource_eav_mysql4/layer_filter_price' => 'Simtech_Searchanise_Model_Resource_Eav_Mysql4_Layer_Filter_Price',
+                        'catalog_resource_eav_mysql4/product_action' => 'Simtech_Searchanise_Model_Resource_Eav_Mysql4_Product_Action',
+                        'catalogsearch/advanced' => 'Simtech_Searchanise_Model_Advanced',
+                        'catalogsearch_resource/fulltext_collection' => 'Simtech_Searchanise_Model_Resource_Fulltext_Collection',
+                        'catalogsearch_resource/advanced_collection' => 'Simtech_Searchanise_Model_Resource_Advanced_Collection',
+                        'tag/tag_relation' => 'Simtech_Searchanise_Model_Tag_Relation',
+                        'importexport/import_entity_product' => 'Simtech_Searchanise_Model_Import_Entity_Product',
+                        'core_resource/store' => 'Simtech_Searchanise_Model_Resource_Store',
+                        'core_mysql4/store' => 'Simtech_Searchanise_Model_Mysql4_Store',
+                        'adminhtml/config_data' => 'Simtech_Searchanise_Model_Config_Data',
+                    );
 
-                foreach($models as $patch => $needed) {
-                    $used = get_class(Mage::getModel($patch));
-                    if ($used != $needed) {
-                        $options['wrong_models'][$patch] = array(
-                            'needed' => $needed,
-                            'used' => $used,
-                        );
+                    foreach($models as $patch => $needed) {
+                        $used = get_class(Mage::getModel($patch));
+                        if ($used != $needed) {
+                            $options['wrong_models'][$patch] = array(
+                                'needed' => $needed,
+                                'used' => $used,
+                            );
+                        }
                     }
-                }
 
-                $blocks = array(
-                    'global/blocks/catalog/rewrite/product_list_toolbar' => 'Simtech_Searchanise_Block_Product_List_Toolbar',
-                    'global/blocks/catalogsearch/rewrite/result' => 'Simtech_Searchanise_Block_Result',
-                    'global/blocks/catalogsearch/rewrite/autocomplete' => 'Simtech_Searchanise_Block_Autocomplete',
-                );
+                    $blocks = array(
+                        'global/blocks/catalog/rewrite/product_list_toolbar' => 'Simtech_Searchanise_Block_Product_List_Toolbar',
+                        'global/blocks/catalogsearch/rewrite/result' => 'Simtech_Searchanise_Block_Result',
+                        'global/blocks/catalogsearch/rewrite/autocomplete' => 'Simtech_Searchanise_Block_Autocomplete',
+                    );
 
-                foreach($blocks as $patch => $needed) {
-                    $used = Mage::getConfig()->getNode($patch)->__toString();
-                    if ($used != $needed) {
-                        $options['wrong_blocks'][$patch] = array(
-                            'needed' => $needed,
-                            'used' => $used,
-                        );
+                    foreach($blocks as $patch => $needed) {
+                        $used = Mage::getConfig()->getNode($patch)->__toString();
+                        if ($used != $needed) {
+                            $options['wrong_blocks'][$patch] = array(
+                                'needed' => $needed,
+                                'used' => $used,
+                            );
+                        }
                     }
-                }
+                }// if $modules
 
                 if ($visual) {
                     Mage::helper('searchanise/ApiSe')->printR($options);

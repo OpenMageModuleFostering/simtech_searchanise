@@ -36,8 +36,8 @@
                     <show_in_website>1</show_in_website>
                     <show_in_store>1</show_in_store>
                     <fields>
-                        <input_id_search translate="labe commentl">
-                            <label><![CDATA[Search input HTML DOM ID]]></label>
+                        <search_input_selector translate="labe commentl">
+                            <label><![CDATA[Search input jQuery selector]]></label>
                             <comment><![CDATA[Important: Edit only if your custom theme changes the default search input ID!]]></comment>
                             <frontend_type>text</frontend_type>
                             <validate></validate>
@@ -45,7 +45,7 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
-                        </input_id_search>
+                        </search_input_selector>
                         <!-- Hided the "Sync Init Method" option -->
                         <!-- 
                             <type_async translate="label comment">

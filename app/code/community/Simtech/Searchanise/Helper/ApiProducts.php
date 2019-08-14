@@ -986,6 +986,13 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 
     public static function getMinMaxProductId($store = null)
     {
+        if ($store) {
+            if (Mage::helper('catalog/product_flat')->isEnabled()) {
+                Mage::helper('searchanise/ApiProducts')->setIsGetProductsByItems(true);//workaround for get all attributes
+                Mage::getResourceModel('catalog/product_collection')->setStore($store->getId());//workaround for magento flat products table bug
+            }   
+        } 
+
         $startId = 0;
         $endId = 0;
 
@@ -1031,6 +1038,10 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         $arrProducts = array();
         // Need for get correct products.
         if ($store) {
+            if (Mage::helper('catalog/product_flat')->isEnabled()) {
+                Mage::helper('searchanise/ApiProducts')->setIsGetProductsByItems(true);//workaround for get all attributes
+                Mage::getResourceModel('catalog/product_collection')->setStore($store->getId());//workaround for magento flat products table bug
+            }   
             Mage::app()->setCurrentStore($store->getId());
         } else {
             Mage::app()->setCurrentStore(0);

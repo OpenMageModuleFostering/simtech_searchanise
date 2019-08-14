@@ -128,7 +128,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
 
     public static function getResultsFormPath()
     {
-        return Mage::getUrl() . 'searchanise/result';
+        return Mage::getUrl('', array('_secure' => Mage::app()->getStore()->isCurrentlySecure())) . 'searchanise/result';
     }
 
     protected function setDefaultSort(&$params, $type)

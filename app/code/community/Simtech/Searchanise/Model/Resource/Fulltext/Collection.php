@@ -154,4 +154,9 @@ class Simtech_Searchanise_Model_Resource_Fulltext_Collection extends Mage_Catalo
 
         return $this;
     }
+
+    public function setVisibility($visibility)
+    {
+        return true;
+    }
 }
