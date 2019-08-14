@@ -16,16 +16,8 @@ class Simtech_Searchanise_Block_Async extends Mage_Core_Block_Text
 {
     private function _startSignup()
     {
-        // not used because notification will not show
-        $autoInstallInBackground = false;
-
-        if ($autoInstallInBackground) {
-            $signupUrl = Mage::helper("adminhtml")->getUrl(Mage::helper('searchanise/ApiSe')->getConnectLink());
-            $html .= "\n<object data=\"$signupUrl\" width=\"0\" height=\"0\" type=\"text/html\"></object>\n";
-        } else {
-            if (Mage::helper('searchanise/ApiSe')->signup(null, false) == true) {
-                Mage::helper('searchanise/ApiSe')->queueImport(null, false);
-            }
+        if (Mage::helper('searchanise/ApiSe')->signup(null, false) == true) {
+            Mage::helper('searchanise/ApiSe')->queueImport(null, false);
         }
 
         return true;
@@ -48,7 +40,6 @@ class Simtech_Searchanise_Block_Async extends Mage_Core_Block_Text
 
                 if ($textNotification != '') {
                     Mage::helper('searchanise/ApiSe')->setNotification('N', Mage::helper('searchanise')->__('Notice'), $textNotification);
-                    Mage::helper('searchanise/ApiSe')->showWarningFlatTables();
                     $this->_startSignup();
                     
                 } else {

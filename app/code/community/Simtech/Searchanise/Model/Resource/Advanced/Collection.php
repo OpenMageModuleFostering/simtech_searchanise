@@ -33,6 +33,18 @@ class Simtech_Searchanise_Model_Resource_Advanced_Collection extends Mage_Catalo
         $this->_searchaniseCollection->setCollection($this);
     }
 
+    public function __construct($resource = null, array $args = array())
+    {
+        parent::__construct($resource, $args);
+
+        if (Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            $this->setSearchaniseRequest(Mage::helper('searchanise')->getSearchaniseRequest());
+            if ($this->checkSearchaniseResult()) {
+                $this->addSearchaniseFilter();
+            }
+        }
+    }
+
     public function initSearchaniseRequest()
     {
         return $this->_searchaniseCollection->initSearchaniseRequest();

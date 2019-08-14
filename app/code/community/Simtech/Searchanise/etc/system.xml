@@ -37,8 +37,8 @@
                     <show_in_store>1</show_in_store>
                     <fields>
                         <input_id_search translate="labe commentl">
-                            <label><![CDATA[Search field ID]]></label>
-                            <comment><![CDATA[ID of the search field in the customer area]]></comment>
+                            <label><![CDATA[Search input HTML DOM ID]]></label>
+                            <comment><![CDATA[Important: Edit only if your custom theme changes the default search input ID!]]></comment>
                             <frontend_type>text</frontend_type>
                             <validate></validate>
                             <sort_order>1</sort_order>

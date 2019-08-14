@@ -57,6 +57,8 @@ class Simtech_Searchanise_Helper_ApiSe
     const FL_SHOW_STATUS_ASYNC     = 'show_status';
     const FL_SHOW_STATUS_ASYNC_KEY = 'Y';
 
+    public static $seStoreIds = array();
+
     public static function getParamNotUseHttpRequest()
     {
         return self::NOT_USE_HTTP_REQUEST . '=' . self::NOT_USE_HTTP_REQUEST_KEY;
@@ -192,18 +194,6 @@ class Simtech_Searchanise_Helper_ApiSe
     {
         return self::getStatusModule($store, $moduleName) == 'Y';
     }
-    
-    public static function setUseNavigation($value = null)
-    {
-        self::setSetting('use_navigation', $value, self::CONFIG_PREFIX);
-        
-        return true;
-    }
-
-    public static function getUseNavigation($value = null)
-    {
-        return self::getSetting('use_navigation', self::CONFIG_PREFIX);
-    }
 
     public static function setUseFullFeed($value = null)
     {
@@ -243,7 +233,7 @@ class Simtech_Searchanise_Helper_ApiSe
     
     public static function getSearchaniseLink()
     {
-        return 'searchanise/index';
+        return 'adminhtml/searchanise/index';
     }
     
     public static function getAsyncLink($flNotUserHttpRequest = false)
@@ -264,17 +254,17 @@ class Simtech_Searchanise_Helper_ApiSe
 
     public static function getReSyncLink()
     {
-        return 'searchanise/resync';
+        return 'adminhtml/searchanise/resync';
     }
 
     public static function getOptionsLink()
     {
-        return 'searchanise/options';
+        return 'adminhtml/searchanise/options';
     }
 
     public static function getModuleLink()
     {
-        return 'searchanise/index/index';
+        return 'adminhtml/searchanise/index';
     }
 
     public static function getModuleUrl()
@@ -284,7 +274,7 @@ class Simtech_Searchanise_Helper_ApiSe
 
     public static function getConnectLink()
     {
-        return 'searchanise/signup';
+        return 'adminhtml/searchanise/signup';
     }
 
     public static function getConnectUrl($flNotUserHttpRequest = false, $storeId = '', $flCheckSecure = true)
@@ -630,6 +620,14 @@ class Simtech_Searchanise_Helper_ApiSe
         } else {
             $stores = Mage::app()->getStores();
         }
+
+        if (!empty(self::$seStoreIds)) {
+            foreach ($stores as $key => $store) {
+                if (!in_array($store->getId(), self::$seStoreIds)) {
+                    unset($stores[$key]);
+                }
+            }
+        }
         
         return $stores;
     }
@@ -638,22 +636,11 @@ class Simtech_Searchanise_Helper_ApiSe
     {
         if (self::checkImportIsDone()) {
             if (self::checkNotificationAsyncComleted()) {
-                Mage::helper('searchanise/ApiSe')->showWarningFlatTables();
-
                 $textNotification = Mage::helper('searchanise')->__('Catalog indexation is complete. Configure Searchanise via the <a href="%s">Admin Panel</a>.', Mage::helper('searchanise/ApiSe')->getModuleUrl());
 
                 Mage::helper('searchanise/ApiSe')->setNotification('N', Mage::helper('searchanise')->__('Searchanise'), $textNotification);
                 self::setNotificationAsyncComleted(true);
             }
-        }
-
-        return true;
-    }
-
-    public static function showWarningFlatTables()
-    {
-        if (Mage::getStoreConfigFlag(Mage_Catalog_Helper_Product_Flat::XML_PATH_USE_PRODUCT_FLAT) && count(self::getStores()) > 1) {
-            Mage::helper('searchanise/ApiSe')->setNotification('W', Mage::helper('searchanise')->__('Searchanise'), Mage::helper('searchanise')->__("Please disable the Use Flat Catalog Product (Configuration -> Catalog -> Frontend) setting if you have multiple store views. Otherwise, Searchanise may work incorrectly."));
         }
 
         return true;
@@ -705,6 +692,7 @@ class Simtech_Searchanise_Helper_ApiSe
         $client->setUri($url);
         
         $client->setConfig(array(
+            'httpversion'   => Zend_Http_Client::HTTP_0,
             'maxredirects'  => $maxredirects,
             'timeout'       => $timeout,
         ));
@@ -1282,7 +1270,8 @@ class Simtech_Searchanise_Helper_ApiSe
 
         return $ret;
     }
-    private static function _addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, $isOnlyActive = false)
+
+    public static function _addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, $isOnlyActive = false)
     {
         $i = 0;
         $step = 50;
@@ -1655,11 +1644,10 @@ class Simtech_Searchanise_Helper_ApiSe
         } elseif (is_array($data) && !empty($data['errors'])) {
             foreach ($data['errors'] as $e) {
                 if ($showNotification == true) {
-                    self::setNotification('E', Mage::helper('searchanise')->__('Error'), 'Searchanise: parseResponse: ' . $e->getMessage());
+                    self::setNotification('E', Mage::helper('searchanise')->__('Error'), 'Searchanise: ' . $e);
                 }
-                self::log('parseResponse : ' . $e->getMessage());
             }
-            
+
             $result = false;
         } elseif ($data === 'ok') {
             $result = true;

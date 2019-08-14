@@ -34,37 +34,4 @@ class Simtech_Searchanise_Model_Advanced extends Mage_CatalogSearch_Model_Advanc
         
         return $this;
     }
-
-    /**
-     * Prepare product collection
-     *
-     * @param Mage_CatalogSearch_Model_Resource_Advanced_Collection $collection
-     * @return Mage_Catalog_Model_Layer
-    */
-    public function prepareProductCollection($collection)
-    {
-        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
-            return parent::prepareProductCollection($collection);
-        }
-        
-        if (method_exists($collection, 'setSearchaniseRequest')) {
-            $collection->setSearchaniseRequest(Mage::helper('searchanise')->getSearchaniseRequest());
-        }
-     
-        if (!$collection && !method_exists($collection, 'checkSearchaniseResult') || !$collection->checkSearchaniseResult()) {
-            return parent::prepareProductCollection($collection);
-        }
-
-        $collection->addAttributeToSelect(Mage::getSingleton('catalog/config')->getProductAttributes())
-            ->addSearchaniseFilter()
-            ->setStore(Mage::app()->getStore())
-            ->addMinimalPrice()
-            ->addTaxPercents()
-            ->addStoreFilter();
-
-        Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($collection);
-        Mage::getSingleton('catalog/product_visibility')->addVisibleInSearchFilterToCollection($collection);
-        
-        return $this;
-    }
 }

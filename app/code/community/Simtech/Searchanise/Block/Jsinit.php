@@ -17,8 +17,32 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
     protected function _toHtml()
     {
         $html = '';
+
+        $inputId = Mage::helper('searchanise/ApiSe')->getInputIdSearch();
+        if (empty($inputId)) {
+            $inputId = 'search';
+        }
+
+        //
+        // Disable standart autocomplete
+        //
+        $html .=
+        "        <script type=\"text/javascript\">
+        //<![CDATA[
+            try {
+                Prototype && Prototype.Version && Event && Event.observe && Event.observe(window, 'load', function()
+                {
+                    if ($$('input#{$inputId}').length) {
+                        $$('input#{$inputId}')[0].stopObserving('keydown');
+                    }
+                });
+            } catch (e) {}
+        //]]>
+        </script>
+        ";
+
         $store = Mage::app()->getStore();
-        
+
         if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true, $store)) {
             return $html;
         }
@@ -28,15 +52,7 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
         if (empty($apiKey)) {
             return $html;
         }
-                
-        $inputId = Mage::helper('searchanise/ApiSe')->getInputIdSearch();
-        if ($inputId == '') {
-            // Uncomment the lines below if it is necessary to disable search widget in frontend
-            //~ return '';
-        }
-        if (empty($inputId)) {
-            $inputId = 'search';
-        }
+
         $union = 'Searchanise.AutoCmpParams.union = {};';
         $restrictBy = '';
 
@@ -56,7 +72,7 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
         if ($showOutOfStock) {
             // nothing
         } else {
-            $restrictBy .= "\nSearchanise.AutoCmpParams.restrictBy.is_in_stock = '1';";
+            $restrictBy .= "Searchanise.AutoCmpParams.restrictBy.is_in_stock = '1';";
         }
 
         $priceFormat['after'] = $priceFormat['after'] ? 'true' : 'false';
@@ -96,7 +112,8 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
                     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(__se, s);
                 })();
             //]]>
-            </script>";
+        </script>
+        ";
         
         // Uncomment the lines below if it is necessary to hide price in search widget
         // $html .= '

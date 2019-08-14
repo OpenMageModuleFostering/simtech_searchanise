@@ -14,6 +14,9 @@
 
 class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
 {
+    private static $_excludedCategories = array(// use id to hide categories
+    );
+
     public static function generateCategoryFeed($category, $store = null, $checkData = true)
     {
         $item = array();
@@ -22,7 +25,8 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
             if (!$category ||
                 !$category->getId() ||
                 !$category->getName() ||
-                !$category->getIsActive()
+                !$category->getIsActive() ||
+                in_array($category->getId(), self::$_excludedCategories)
                 ) {
                 return $item;
             }
@@ -30,9 +34,6 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
         // Need for generate correct url.
         if ($store) {
             $category->getUrlInstance()->setStore($store->getId());
-            Mage::app()->setCurrentStore($store->getId());
-        } else {
-            Mage::app()->setCurrentStore(0);
         }
 
         $item['id'] = $category->getId();
@@ -65,6 +66,12 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
 
     public static function getCategories($categoryIds = Simtech_Searchanise_Model_Queue::NOT_DATA, $store = null)
     {
+        if ($store) {
+            Mage::app()->setCurrentStore($store->getId());
+        } else {
+            Mage::app()->setCurrentStore(0);
+        }
+
         static $arrCategories = array();
         
         $keyCategories = '';
@@ -77,6 +84,7 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
         }
         $storeId = $store ? $store->getId() : 0;
         $keyCategories .= ':' .  $storeId;
+        $rootCategoryId = Mage::app()->getStore($storeId)->getRootCategoryId();
 
         if (isset($arrCategories[$keyCategories])) {
             // Nothing
@@ -86,7 +94,7 @@ class Simtech_Searchanise_Helper_ApiCategories extends Mage_Core_Helper_Data
             /* @var $collection Mage_Catalog_Model_Resource_Eav_Mysql4_Category_Collection */
             $collection
                 ->addAttributeToSelect('*')
-                ->setStoreId($storeId);
+                ->addAttributeToFilter('path', array('like' => "1/{$rootCategoryId}/%"));
             
             if ($categoryIds !== Simtech_Searchanise_Model_Queue::NOT_DATA) {
                 // Already exist automatic definition 'one value' or 'array'.

@@ -275,7 +275,7 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
         $query = Mage::helper('searchanise/ApiSe')->buildQuery($this->getSearchParams());
         $this->setSearchParam('api_key', $this->getApiKey());
         if (Mage::helper('searchanise')->checkDebug()) {
-            Mage::helper('searchanise/ApiSe')->printR($this->getSearchParamsStr());
+            Mage::helper('searchanise/ApiSe')->printR(Mage::helper('searchanise/ApiSe')->getServiceUrl() . '/search?api_key=' . $this->getApiKey() . $this->getSearchParamsStr());
             Mage::helper('searchanise/ApiSe')->printR($this->getSearchParams());
         }
 
@@ -334,8 +334,6 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
                 // nothing
             } elseif ($result['error'] == 'NEED_RESYNC_YOUR_CATALOG') {
                 Mage::helper('searchanise/ApiSe')->queueImport($this->getStore(), false);
-            } elseif ($result['error'] == 'NAVIGATION_DISABLED') {
-                Mage::helper('searchanise/ApiSe')->setUseNavigation(false);
             } elseif ($result['error'] == 'FULL_FEED_DISABLED') {
                 Mage::helper('searchanise/ApiSe')->setUseFullFeed(false);
             }
@@ -350,7 +348,7 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
         }
         
         $this->setSearchResult($result);
-        
+
         return $this;
     }
     

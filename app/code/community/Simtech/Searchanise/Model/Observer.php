@@ -736,4 +736,71 @@ class Simtech_Searchanise_Model_Observer
         
         return $this;
     }
+
+    /**
+     * Before catalogSearchResultIndex dispatch
+     *
+     * @param   Varien_Event_Observer $observer
+     * @return  Mage_CatalogIndex_Model_Observer
+     */
+    public function controllerActionPredispatchCatalogSearchResultIndex(Varien_Event_Observer $observer)
+    {
+        $data = $observer->getData();
+        $controller = $data['controller_action'];
+
+        $defaultToolbarBlock = 'catalog/product_list_toolbar';
+
+        if (Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            
+            $query = Mage::helper('catalogsearch')->getQuery();
+
+            $query->setStoreId(Mage::app()->getStore()->getId());
+
+            if ($query->getQueryText() != '') {
+                if (Mage::helper('searchanise')->checkEnabled()) {
+                    $blockToolbar = $controller->getLayout()->getBlock('product_list_toolbar');
+                    if (!$blockToolbar) {
+                        $blockToolbar = $controller->getLayout()->createBlock($defaultToolbarBlock, microtime());
+                    }
+                                    
+                    Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::TEXT_FIND, $controller, $blockToolbar, $query);
+                }
+            }
+        }
+        
+        return $this;
+    }
+
+    /**
+     * Before catalogSerachAdvancedResult dispatch
+     *
+     * @param   Varien_Event_Observer $observer
+     * @return  Mage_CatalogIndex_Model_Observer
+     */
+    public function controllerActionPredispatchCatalogSearchAdvancedResult(Varien_Event_Observer $observer)
+    {
+        $data = $observer->getData();
+        $controller = $data['controller_action'];
+
+        $default_toolbar_block = 'catalog/product_list_toolbar';
+
+        if (Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+
+            try {
+                $query = $controller->getRequest()->getQuery();
+            } catch (Mage_Core_Exception $e) {
+                return $this;
+            }
+
+            if ($query) {
+                if (Mage::helper('searchanise')->checkEnabled()) {
+                    $block_toolbar = $controller->getLayout()->createBlock($default_toolbar_block, microtime());
+                    
+                    Mage::helper('searchanise')->execute(Simtech_Searchanise_Helper_Data::TEXT_ADVANCED_FIND, $controller, $block_toolbar, $query);
+                }
+            }
+        }
+        
+        return $this;
+    }
 }

@@ -14,7 +14,7 @@
 
 class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 {
-    const WEIGHT_SHORT_DESCRIPTION   =  0; // not need because use in summary
+    const WEIGHT_SHORT_DESCRIPTION   = 40;
     const WEIGHT_DESCRIPTION         = 40;
     const WEIGHT_DESCRIPTION_GROUPED = 30;
 
@@ -185,6 +185,20 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
                 } else {
                     $quantity = $stockItem->getQty();
 
+                    if ($quantity <= 0) {
+
+                        $backorders = 0;
+                        if ($stockItem->getData('use_config_backorders') == 1) {
+                            $backorders = Mage::getStoreConfig(Mage_CatalogInventory_Model_Stock_Item::XML_PATH_BACKORDERS);
+                        } else {
+                            $backorders = $stockItem->getData('backorders');
+                        }
+
+                        if ($backorders == 1 || $backorders == 2) {
+                            $quantity = 1;
+                        }
+                    }
+
                     if ($unitedProducts) {
                         $quantity = 0;
                         foreach ($unitedProducts as $itemProductKey => $itemProduct) {
@@ -255,14 +269,13 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         } elseif ($product->isGrouped() && $childrenProducts) {
             // fixme in the future
             // maybe exist better solution get `minimalPrice` for `Grouped` product
-            $minimalPrice = '';
+            $minimalPrice = false;
 
             foreach ($childrenProducts as $childrenProductsKey => $childrenProduct) {
                 if ($childrenProduct) {
-                    $minimalPriceChildren = self::_getProductMinimalPrice($childrenProduct, $store, null, $customerGroupId);
+                    $minimalPriceChildren = self::_getProductMinimalPrice(clone $childrenProduct, $store, null, $customerGroupId);
 
-                    if (($minimalPriceChildren < $minimalPrice) || 
-                        ($minimalPrice == '')) {
+                    if (($minimalPriceChildren < $minimalPrice) || ($minimalPrice === false)) {
                         $minimalPrice = $minimalPriceChildren;
                     }
                 }
@@ -334,21 +347,34 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 
     private static function _generateProductPrices(&$item, $product, $childrenProducts = null, $store = null)
     {
+        $product->getGroupPrice();//preload group_price attribute
+
         if ($customerGroups = self::_getCustomerGroups()) {
-            foreach ($customerGroups as $keyCustomerGroup => $customerGroup) {
+            foreach ($customerGroups as $customerGroup) {
                 // It is needed because the 'setCustomerGroupId' function works only once.
                 $productCurrentGroup = clone $product;
                 $customerGroupId = $customerGroup->getId();
 
-                $price = self::_getProductMinimalPrice($productCurrentGroup, $store, $childrenProducts, $customerGroupId);
-                if ($price != '') {
-                    $price = round($price, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
+                if ($customerGroupId == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID || !isset($equalPriceForAllGroups)) {
+                    $price = self::_getProductMinimalPrice($productCurrentGroup, $store, $childrenProducts, $customerGroupId);
+
+                    if ($price !== false) {
+                        $price = round($price, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
+                    }
+
+                    if ($customerGroupId == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID) {
+                        $item['price'] = $price;
+
+                        $groupPrices = $product->getData('group_price');
+                        if (empty($groupPrices)) {
+                            $equalPriceForAllGroups = $price;
+                        }
+                    }
+
+                } else {
+                    $price = $equalPriceForAllGroups;
                 }
 
-                if ($customerGroupId == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID) {
-                    $item['price'] = $price;
-                    $defaultPrice = $price; // default price get for not logged user
-                }
                 $label_ = Mage::helper('searchanise/ApiSe')->getLabelForPricesUsergroup() . $customerGroup->getId();
                 $item[$label_] = $price;
                 unset($productCurrentGroup);
@@ -458,13 +484,16 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
     private static function _getIdAttributesValues($products, $attributeCode)
     {
         $values = array();
-
         foreach ($products as $productKey => $product) {
             $value = $product->getData($attributeCode);
             if ($value == '') {
                 // Nothing.
             } elseif (is_array($value) && empty($value)) {
                 // Nothing.
+
+            } elseif ($productKey == 0 && ($attributeCode == 'name' || $attributeCode == 'sku')) {// $productKey=0 - parent product
+                // Nothing. Prevent dublicate.
+
             } else {
                 if (!in_array($value, $values)) {
                     $values[] = $value;
@@ -534,9 +563,11 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
                 $isSearchable = $attribute->getIsSearchable();
                 $isVisibleInAdvancedSearch = $attribute->getIsVisibleInAdvancedSearch();
                 $usedForSortBy = $attribute->getUsedForSortBy();
+                $isFilterableInSearch = $attribute->getIsFilterableInSearch();
+
                 $attributeName = 'attribute_' . $attribute->getId();
 
-                $isNecessaryAttribute = $useFullFeed || $isSearchable || $isVisibleInAdvancedSearch || $usedForSortBy || in_array($attributeCode, $requiredAttributes);
+                $isNecessaryAttribute = $useFullFeed || $isSearchable || $isVisibleInAdvancedSearch || $usedForSortBy || $isFilterableInSearch || in_array($attributeCode, $requiredAttributes);
                 
                 if (!$isNecessaryAttribute) {
                     continue;
@@ -546,43 +577,52 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
                     // nothing
 
                 // <system_attributes>
-                    } elseif ($attributeCode == 'price') {
-                        // already defined in the '<cs:price>' field
+                } elseif ($attributeCode == 'price') {
+                    // already defined in the '<cs:price>' field
 
-                    } elseif ($attributeCode == 'status' || $attributeCode == 'visibility') {
-                        $item[$attributeCode] = $value;
+                } elseif ($attributeCode == 'status' || $attributeCode == 'visibility') {
+                    $item[$attributeCode] = $value;
 
-                    } elseif ($attributeCode == 'weight') {
-                        $item[$attributeCode] = $unitedValues;
-
-                    // <dates>
-                    } elseif ($attributeCode == 'created_at' || $attributeCode == 'updated_at') {
-                        $dateTimestamp = Mage::getModel('core/date')->timestamp(strtotime($value));
-                        $item[$attributeCode] = $dateTimestamp;
-                    // </dates>
-
-                    } elseif ($attributeCode == 'has_options') {
-                    } elseif ($attributeCode == 'required_options') {
-                    } elseif ($attributeCode == 'custom_layout_update') {
-                    } elseif ($attributeCode == 'tier_price') { // quantity discount
-                    } elseif ($attributeCode == 'image_label') {
-                    } elseif ($attributeCode == 'small_image_label') {
-                    } elseif ($attributeCode == 'thumbnail_label') {
-                    } elseif ($attributeCode == 'url_key') { // seo name
+                } elseif ($attributeCode == 'has_options') {
+                } elseif ($attributeCode == 'required_options') {
+                } elseif ($attributeCode == 'custom_layout_update') {
+                } elseif ($attributeCode == 'tier_price') { // quantity discount
+                } elseif ($attributeCode == 'image_label') {
+                } elseif ($attributeCode == 'small_image_label') {
+                } elseif ($attributeCode == 'thumbnail_label') {
+                } elseif ($attributeCode == 'tax_class_id') {
+                } elseif ($attributeCode == 'url_key') { // seo name
                 // <system_attributes>
 
                 } elseif ($attributeCode == 'group_price') {
                     // nothing
                     // fixme in the future if need
                 
-                } elseif ($attributeCode == 'description') {
-                    if ($value != '') {
-                        $item[$attributeCode] = $value;
+                } elseif ($attributeCode == 'short_description') {
+                    if (!empty($value)) {// if not empty value already sent in summary
+                        if (count($unitedValues) > 1) {
+                            $item[$attributeCode] = array_slice($unitedValues, 1);
+                        }
+
+                    } elseif (!empty($unitedValues)) {
+                        $item[$attributeCode] = $unitedValues;
+
+                    } else {
+                        // nothing
                     }
-                    $item['se_grouped_' . $attributeCode] = $unitedValues;
+
+                } elseif ($attributeCode == 'description') {//$product->getData('short_description')
+                    $short_description = $product->getData('short_description');
+
+                    if (!empty($short_description)) {
+                        $item['full_description'] = $value;
+                    }
+
+                    if (count($unitedValues) > 1) {
+                        $item['se_grouped_' . $attributeCode] = array_slice($unitedValues, 1);
+                    }
 
                 } elseif (
-                    $attributeCode == 'short_description' || 
                     $attributeCode == 'meta_title' || 
                     $attributeCode == 'meta_description' || 
                     $attributeCode == 'meta_keyword') {
@@ -595,7 +635,9 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 
                 } elseif ($inputType == 'select' || $inputType == 'multiselect') {
                     // <id_values>
-                    $item[$attributeName] = $unitedValues;
+                    if ($useFullFeed || $isVisibleInAdvancedSearch || $usedForSortBy || $isFilterableInSearch) {
+                        $item[$attributeName] = $unitedValues;
+                    }
 
                     // <text_values>
                     $unitedTextValues = self::_getProductAttributeTextValues($unitedProducts, $attributeCode, $inputType, $store);
@@ -648,10 +690,11 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         $item['title'] = $product->getName();
         
         $summary = $product->getData('short_description');
-        
-        if ($summary == '') { 
+
+        if ($summary == '') {
             $summary = $product->getData('description');
         }
+
         $item['summary'] = $summary;
         
         $productUrl = $product->getProductUrl(false);
@@ -688,15 +731,6 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
             }
         }
         // </image_link>
-        
-        // <attributes_position>
-        {
-            // Fixme in the feature:
-            // products could have different position in different categories, sort by "position" disabled.
-            $item['position'] = $product->getData('position');
-            // end
-        }
-        // </attributes_position>
         
         self::_generateProductAttributes($item, $product, $childrenProducts, $unitedProducts, $store);
 
@@ -780,10 +814,7 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 
     public static function isFacet($attribute)
     {
-        $isFilterable         = $attribute->getIsFilterable();
-        $isFilterableInSearch = $attribute->getIsFilterableInSearch();
-        
-        return $isFilterable || $isFilterableInSearch;
+        return $attribute->getIsFilterableInSearch();
     }
 
     private static function _generateFacetFromFilter($attribute, $store = null)
@@ -999,6 +1030,11 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
     {
         $items = array();
 
+        if (Mage::helper('catalog/product_flat')->isEnabled()) {
+            Mage::helper('searchanise/ApiProducts')->setIsGetProductsByItems(true);//workaround for get all attributes
+            Mage::getResourceModel('catalog/product_collection')->setStore($store->getId());//workaround for magento flat products table bug
+        }
+
         $products = self::getProducts($productIds, $store, null);
 
         if ($products) {
@@ -1074,15 +1110,13 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         }
 
         if ($isOnlyActive) {
-            Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($products);
-            // Fixme in the future
+            $products->addAttributeToFilter('status', array('in'=> Mage::getSingleton('catalog/product_status')->getVisibleStatusIds()));
             // It may require to disable "product visibility" filter if "is full feed".
-            if (Mage::helper('searchanise/ApiSe')->getUseFullFeed() || Mage::helper('searchanise/ApiSe')->getUseNavigation()) {
-                Mage::getSingleton('catalog/product_visibility')->addVisibleInSiteFilterToCollection($products);
+            if (Mage::helper('searchanise/ApiSe')->getUseFullFeed()) {
+                $products->addAttributeToFilter('visibility', array('in' => Mage::getSingleton('catalog/product_visibility')->getVisibleInSiteIds()));
             } else {
-                Mage::getSingleton('catalog/product_visibility')->addVisibleInSearchFilterToCollection($products);
+                $products->addAttributeToFilter('visibility', array('in' => Mage::getSingleton('catalog/product_visibility')->getVisibleInSearchIds()));
             }
-            // end fixme
         }
         
         $products->load();
@@ -1108,9 +1142,6 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
                 'status',
                 'visibility',
                 'price',
-                'weight',
-                'created_at',
-                'updated_at',
             );
         }
 
@@ -1129,9 +1160,10 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         $isSearchable = $attribute->getIsSearchable();
         $isVisibleInAdvancedSearch = $attribute->getIsVisibleInAdvancedSearch();
         $usedForSortBy = $attribute->getUsedForSortBy();
+        $isFilterableInSearch = $attribute->getIsFilterableInSearch();
         $attributeName = 'attribute_' . $attribute->getId();
 
-        $isNecessaryAttribute = $useFullFeed || $isSearchable || $isVisibleInAdvancedSearch || $usedForSortBy || in_array($attributeCode, $requiredAttributes);
+        $isNecessaryAttribute = $useFullFeed || $isSearchable || $isVisibleInAdvancedSearch || $usedForSortBy || $isFilterableInSearch || in_array($attributeCode, $requiredAttributes);
         
         if (!$isNecessaryAttribute) {
             return $items;
@@ -1140,6 +1172,7 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         $name = $attribute->getAttributeCode();
         $title = $attribute->getData('frontend_label');
         $type = '';
+        $sorting = $usedForSortBy ? 'Y' : 'N';
         $textSearch = $isSearchable ? 'Y' : 'N';
         $attributeWeight = 0;
 
@@ -1151,19 +1184,6 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         } elseif ($attributeCode == 'status' || $attributeCode == 'visibility') {
             $type = 'text';
             $textSearch = 'N';
-        } elseif ($attributeCode == 'weight') {
-            $type = 'float';
-            $textSearch = 'N';
-        // <dates>
-        } elseif ($attributeCode == 'created_at' || $attributeCode == 'updated_at') {
-            $type = 'int';
-            $textSearch = 'N';
-            if ($attributeCode == 'created_at'){
-                $title = Mage::helper('searchanise')->__('Date Created');
-            } elseif ($attributeCode == 'updated_at') {
-                $title = Mage::helper('searchanise')->__('Date Updated');
-            }
-        // </dates>
         } elseif ($attributeCode == 'has_options') {
         } elseif ($attributeCode == 'required_options') {
         } elseif ($attributeCode == 'custom_layout_update') {
@@ -1171,6 +1191,7 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
         } elseif ($attributeCode == 'image_label') {
         } elseif ($attributeCode == 'small_image_label') {
         } elseif ($attributeCode == 'thumbnail_label') {
+        } elseif ($attributeCode == 'tax_class_id') {
         } elseif ($attributeCode == 'url_key') { // seo name
         // <system_attributes>
 
@@ -1201,6 +1222,7 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
             }
             $type = 'text';
             if ($attributeCode == 'description') {
+                $name = 'full_description';
                 $items[] = array(
                     'name'   => 'se_grouped_' . $attributeCode,
                     'title'  => $attribute->getData('frontend_label') . ' - Grouped',
@@ -1219,11 +1241,13 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
                 'name'   => $name,
                 'title'  => $title,
                 'type'   => $type,
+                'sorting' => $sorting,
                 'weight' => $isSearchable ? self::WEIGHT_SELECT_ATTRIBUTES : 0,
                 'text_search' => $textSearch,
             );
             $name = $attributeName;
             $title = $title . ' - IDs';
+            $sorting = 'N';
             $textSearch = 'N';
 
         } elseif ($inputType == 'text' || $inputType == 'textarea') {
@@ -1253,6 +1277,7 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
                 'name'   => $name,
                 'title'  => $title,
                 'type'   => $type,
+                'sorting' => $sorting,
                 'weight' => $attributeWeight,
                 'text_search' => $textSearch,
             );
@@ -1373,20 +1398,6 @@ class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
             $schema[] = array(
                 'name'        => 'quantity_decimals',
                 'title'       => 'Quantity - decimals',
-                'type'        => 'text',
-                'weight'      => 0,
-                'text_search' => 'N',
-            );
-            $schema[] = array(
-                'name'        => 'created_at',
-                'title'       => 'Created Date',
-                'type'        => 'text',
-                'weight'      => 0,
-                'text_search' => 'N',
-            );
-            $schema[] = array(
-                'name'        => 'position',
-                'title'       => 'Position',
                 'type'        => 'text',
                 'weight'      => 0,
                 'text_search' => 'N',

@@ -15,42 +15,11 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>3.0.5</version>
+            <version>3.1.0</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
         <routers>
-            <!-- OVERRIDE CATALOG CONTOLLERS -->
-            <!-- [disabled_searchanise_search] -->
-            <catalog>
-                <args>
-                   <modules>
-                      <Simtech_Searchanise before="Mage_Catalog">Simtech_Searchanise</Simtech_Searchanise>
-                   </modules>
-                </args>
-            </catalog>
-            <!-- [/disabled_searchanise_search] -->
-            <!-- OVERRIDE CATALOGSEARCH CONTOLLERS -->
-            <!-- [disabled_searchanise_search] -->
-            <catalogsearch>
-                <args>
-                   <modules>
-                      <Simtech_Searchanise before="Mage_CatalogSearch">Simtech_Searchanise</Simtech_Searchanise>
-                   </modules>
-                </args>
-            </catalogsearch>
-            <!-- [/disabled_searchanise_search] -->
-            <!-- OVERRIDE TAG CONTOLLERS -->
-            <!-- [disabled_searchanise_search] -->
-            <tag>
-                <args>
-                    <modules>
-                        <Simtech_Searchanise before="Mage_Tag">Simtech_Searchanise</Simtech_Searchanise>
-                    </modules>
-                </args>
-            </tag>
-            <!-- [/disabled_searchanise_search] -->
-            <!-- END -->
             <searchanise>
                 <use>standard</use>
                 <args>
@@ -75,16 +44,34 @@
                 </searchanise>
             </updates>
         </layout>
+        <events>
+            <controller_action_predispatch_catalogsearch_result_index>
+                <observers>
+                    <rating>
+                        <class>searchanise/observer</class>
+                        <method>controllerActionPredispatchCatalogSearchResultIndex</method>
+                    </rating>
+                </observers>
+            </controller_action_predispatch_catalogsearch_result_index>
+            <controller_action_predispatch_catalogsearch_advanced_result>
+                <observers>
+                    <rating>
+                        <class>searchanise/observer</class>
+                        <method>controllerActionPredispatchCatalogSearchAdvancedResult</method>
+                    </rating>
+                </observers>
+            </controller_action_predispatch_catalogsearch_advanced_result>
+        </events>
     </frontend>
     <admin>
         <routers>
-            <searchanise>
-                <use>admin</use>
+            <adminhtml>
                 <args>
-                    <module>Simtech_Searchanise</module>
-                    <frontName>searchanise</frontName>
+                    <modules>
+                        <searchanise before="Mage_Adminhtml">Simtech_Searchanise_Adminhtml</searchanise>
+                    </modules>
                 </args>
-            </searchanise>
+            </adminhtml>
         </routers>
     </admin>
     <adminhtml>
@@ -93,7 +80,7 @@
                 <children>
                     <searchanise translate="title" module="searchanise">
                         <title>Searchanise</title>
-                        <action>searchanise/index/index</action>
+                        <action>adminhtml/searchanise/index</action>
                     </searchanise>
                 </children>
             </catalog>
@@ -147,7 +134,6 @@
             <!-- [disabled_searchanise_search] -->
             <catalog>
                 <rewrite>
-                    <layer>Simtech_Searchanise_Model_Layer</layer>
                     <layer_filter_category>Simtech_Searchanise_Model_Layer_Filter_Category</layer_filter_category>
                     <layer_filter_price>Simtech_Searchanise_Model_Layer_Filter_Price</layer_filter_price>
                 </rewrite>
@@ -188,7 +174,6 @@
             <!-- [disabled_searchanise_search] -->
             <catalogsearch>
                 <rewrite>
-                    <layer>Simtech_Searchanise_Model_LayerCatalogSearch</layer>
                     <advanced>Simtech_Searchanise_Model_Advanced</advanced>
                 </rewrite>
             </catalogsearch>
@@ -222,23 +207,6 @@
                     <tag_relation>Simtech_Searchanise_Model_Tag_Relation</tag_relation>
                 </rewrite>
             </tag>
-            <!-- END -->
-
-            <!-- OVERRIDE TAG RESOURCE -->
-            <!-- [v1.6] [v1.7] [v1.8] [v1.9] -->
-            <tag_resource>
-                <rewrite>
-                    <product_collection>Simtech_Searchanise_Model_Resource_Product_CollectionTag</product_collection>
-                </rewrite>
-            </tag_resource>
-            <!-- [/v1.6] [/v1.7] [/v1.8] [/v1.9] -->
-            <!-- [v1.5]-->
-            <tag_mysql4>
-                <rewrite>
-                    <product_collection>Simtech_Searchanise_Model_Mysql4_Product_CollectionTag</product_collection>
-                </rewrite>
-            </tag_mysql4>
-            <!-- [/v1.5]-->
             <!-- END -->
 
             <!-- OVERRIDE IMPORTEXPORT MODEL -->
@@ -582,13 +550,6 @@
                         <autocomplete>Simtech_Searchanise_Block_Autocomplete</autocomplete>
                     </rewrite>
                 </catalogsearch>
-                <!-- END -->
-                <!-- OVERRIDE BLOCK TAG -->
-                <tag>
-                    <rewrite>
-                        <product_result>Simtech_Searchanise_Block_Product_Result</product_result>
-                    </rewrite>
-                </tag>
                 <!-- END -->
             <!-- [/disabled_searchanise_search] -->
         </blocks>

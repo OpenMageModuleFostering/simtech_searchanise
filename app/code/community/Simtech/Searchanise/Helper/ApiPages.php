@@ -18,6 +18,9 @@ class Simtech_Searchanise_Helper_ApiPages extends Mage_Core_Helper_Data
         'no-route', // 404 page
         'enable-cookies', // Enable Cookies
         'privacy-policy-cookie-restriction-mode', // Privacy Policy
+        'service-unavailable', // 503 Service Unavailable
+        'private-sales', // Welcome to our Exclusive Online Store
+        'home', // Home
     );
 
     public static function generatePageFeed($page, $store = null, $checkData = true)

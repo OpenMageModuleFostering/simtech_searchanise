@@ -24,8 +24,6 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
     
     const TEXT_FIND          = 'TEXT_FIND';
     const TEXT_ADVANCED_FIND = 'TEXT_ADVANCED_FIND';
-    const VIEW_CATEGORY      = 'VIEW_CATEGORY';
-    const VIEW_TAG           = 'VIEW_TAG';
     
     protected $_disableText;
     protected $_debugText;
@@ -33,8 +31,6 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
     protected static $_searchaniseTypes = array(
         self::TEXT_FIND,
         self::TEXT_ADVANCED_FIND,
-        self::VIEW_CATEGORY,
-        self::VIEW_TAG,
     );
     
     /**
@@ -136,33 +132,25 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             $params = array();
         }
 
-        if (in_array($type, self::$_searchaniseTypes)) {
-            if ($type == self::TEXT_FIND) {
-                $params['sortBy']    = 'relevance';
-                $params['sortOrder'] = 'desc';
+        if ($type == self::TEXT_FIND) {
+            $params['sortBy']    = 'relevance';
+            $params['sortOrder'] = 'desc';
 
-            } elseif ($type == self::TEXT_ADVANCED_FIND) {
-                $params['sortBy']    = 'name';
-                $params['sortOrder'] = 'asc';
+        } elseif ($type == self::TEXT_ADVANCED_FIND) {
+            $params['sortBy']    = 'name';
+            $params['sortOrder'] = 'asc';
+        }
 
-            } elseif ($type == self::VIEW_CATEGORY) {
-                $params['sortBy']    = 'name';
-                $params['sortOrder'] = 'asc';
+        if (empty($params['restrictBy'])) {
+            $params['restrictBy'] = array();
+        }
 
-            } elseif ($type == self::VIEW_TAG) {
-                $params['sortBy']    = 'name';
-                $params['sortOrder'] = 'asc';
-            }
+        if (empty($params['queryBy'])) {
+            $params['queryBy'] = array();
+        }
 
-            if (empty($params['restrictBy'])) {
-                $params['restrictBy'] = array();
-            }
-            if (empty($params['queryBy'])) {
-                $params['queryBy'] = array();
-            }
-            if (empty($params['union'])) {
-                $params['union'] = array();
-            }
+        if (empty($params['union'])) {
+            $params['union'] = array();
         }
 
         return $this;
@@ -188,15 +176,8 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         $check = false;
 
         $type = $this->getSearchaniseCurentType();
-        
         if ($type) {
-            if (Mage::helper('searchanise/ApiSe')->getUseNavigation()) {
-                $check = true;
-            } else {
-                if (($type == self::TEXT_FIND) || ($type == self::TEXT_ADVANCED_FIND)) {
-                    $check = true;
-                }
-            }
+            $check = true;
         }
 
         return $check;
@@ -208,12 +189,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         if ((!$this->checkEnabled()) || (!Mage::helper('searchanise/ApiSe')->getEnabledSearchaniseSearch())) {
             return;
         }
-        
-        if (!Mage::helper('searchanise/ApiSe')->getUseNavigation()) {
-            if (($type != self::TEXT_FIND) && ($type != self::TEXT_ADVANCED_FIND)) {
-                return;
-            }
-        }
+
         $this->setSearchaniseCurentType($type);
         if (empty($params)) {
             $params = array();
@@ -232,89 +208,63 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             $params['restrictBy']['is_in_stock'] = '1';
         }
         
-        if (in_array($type, self::$_searchaniseTypes)) {
-            if ($type == self::TEXT_FIND) {
-                $params['q'] = Mage::helper('catalogsearch')->getQueryText();
-                if ($params['q'] != '') {
-                    $params['q'] = strtolower(trim($params['q']));
-                }
+        if ($type == self::TEXT_FIND) {
+            $params['q'] = Mage::helper('catalogsearch')->getQueryText();
+            if ($params['q'] != '') {
+                $params['q'] = strtolower(trim($params['q']));
+            }
 
-                $params['facets']                = 'true';
-                $params['suggestions']           = 'true';
-                $params['query_correction']      = 'false';
-                $params['suggestionsMaxResults'] = Mage::helper('searchanise/ApiSe')->getSuggestionsMaxResults();
-                
-                $params['restrictBy']['visibility'] = '3|4';
-                $minQuantityDecimals = Mage::helper('searchanise/ApiSe')->getMinQuantityDecimals();
-                if (!empty($minQuantityDecimals)) {
-                    $params['restrictBy']['quantity_decimals'] = $minQuantityDecimals . ',';
-                }
+            $params['facets']                = 'true';
+            $params['suggestions']           = 'true';
+            $params['query_correction']      = 'false';
+            $params['suggestionsMaxResults'] = Mage::helper('searchanise/ApiSe')->getSuggestionsMaxResults();
 
-            } elseif ($type == self::TEXT_ADVANCED_FIND) {
-                $params['facets']           = 'false';
-                $params['suggestions']      = 'false';
-                $params['query_correction'] = 'false';
-                
-                $params['restrictBy']['visibility'] = '3|4';
-                $minQuantityDecimals = Mage::helper('searchanise/ApiSe')->getMinQuantityDecimals();
-                if (!empty($minQuantityDecimals)) {
-                    $params['restrictBy']['quantity_decimals'] = $minQuantityDecimals . ',';
-                }
-                
-            } elseif ($type == self::VIEW_CATEGORY) {
-                // fixme in the future
-                // need to add check to display block "Layered Navigation"
-                if (true) {
-                    $params['facets'] = 'true';
-                    
-                } else {
-                    $params['facets'] = 'false';
-                }
-                
-                $params['suggestions'] = 'false';
-                $params['restrictBy']['visibility'] = '2|4';
+            $params['restrictBy']['visibility'] = '3|4';
+            $minQuantityDecimals = Mage::helper('searchanise/ApiSe')->getMinQuantityDecimals();
+            if (!empty($minQuantityDecimals)) {
+                $params['restrictBy']['quantity_decimals'] = $minQuantityDecimals . ',';
+            }
 
-            } elseif ($type == self::VIEW_TAG) {
-                $params['facets']      = 'false';
-                $params['suggestions'] = 'false';
-                
-                $params['restrictBy']['visibility'] = '3|2|4';
+        } elseif ($type == self::TEXT_ADVANCED_FIND) {
+            $params['facets']           = 'false';
+            $params['suggestions']      = 'false';
+            $params['query_correction'] = 'false';
+
+            $params['restrictBy']['visibility'] = '3|4';
+            $minQuantityDecimals = Mage::helper('searchanise/ApiSe')->getMinQuantityDecimals();
+            if (!empty($minQuantityDecimals)) {
+                $params['restrictBy']['quantity_decimals'] = $minQuantityDecimals . ',';
             }
         }
 
         if ((!empty($controller)) && (!empty($blockToolbar))) {
             if ($availableOrders = $blockToolbar->getAvailableOrders()) {
-                if (in_array($type, self::$_searchaniseTypes)) {
-                    $fl_change_orders = false;
-                    // Fixme in the feature:
-                    // products could have different position in different categories, sort by "position" disabled.
-                    if (isset($availableOrders['position'])) {
-                        $fl_change_orders = true;
-                        unset($availableOrders['position']);
-                    }
-                    // end
+                $fl_change_orders = false;
+                // Fixme in the feature:
+                // products could have different position in different categories, sort by "position" disabled.
+                if (isset($availableOrders['position'])) {
+                    $fl_change_orders = true;
+                    unset($availableOrders['position']);
+                }
+                // end
 
-                    if ($type == self::TEXT_FIND) {
-                        if (!isset($availableOrders['relevance'])) {
-                            $fl_change_orders = true;
-                            $availableOrders = array_merge(
-                                array('relevance' => $controller->__('Relevance')),
-                                $availableOrders
-                            );
-                        }
-                    } elseif ($type == self::TEXT_ADVANCED_FIND) {
-                        // Nothing.
-                    } elseif ($type == self::VIEW_CATEGORY) {
-                        // Nothing.
-                    } elseif ($type == self::VIEW_TAG) {
-                        // Nothing.
+                if ($type == self::TEXT_FIND) {
+                    if (!isset($availableOrders['relevance'])) {
+                        $fl_change_orders = true;
+                        $availableOrders = array_merge(
+                            array('relevance' => $controller->__('Relevance')),
+                            $availableOrders
+                        );
                     }
-                    if ($fl_change_orders) {
-                        $blockToolbar->setAvailableOrders($availableOrders);
-                        // If it changed orders then necessary set new default order and default direction.
-                        $blockToolbar->setDefaultOrder($params['sortBy']);
-                        $blockToolbar->setDefaultDirection($params['sortOrder']);
-                    }
+                } elseif ($type == self::TEXT_ADVANCED_FIND) {
+                    // Nothing.
+                }
+
+                if ($fl_change_orders) {
+                    $blockToolbar->setAvailableOrders($availableOrders);
+                    // If it changed orders then necessary set new default order and default direction.
+                    $blockToolbar->setDefaultOrder($params['sortBy']);
+                    $blockToolbar->setDefaultDirection($params['sortOrder']);
                 }
             }
 
@@ -325,18 +275,19 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             $startIndex = 0;
             $curPage = (int) $blockToolbar->getCurrentPage();
             $startIndex = $curPage > 1 ? ($curPage - 1) * $maxResults : 0;
-            
+
             if ($maxResults) {
                 $params['maxResults'] = $maxResults;
             }
+
             if ($startIndex) {
                 $params['startIndex'] = $startIndex;
             }
-            
+
             if ($sortBy) {
                 $params['sortBy'] = $sortBy;
             }
-            
+
             if ($sortOrder) {
                 $params['sortOrder'] = $sortOrder;
             }
@@ -344,7 +295,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         // Fixme in the future
         // Need add check the 'sort By' parameter on the existence of Server.
         // $params['sortBy']
-                
+
         //ADD FACETS
         $arrAttributes = array();
         $arrInputType  = array(); // need for save type $arrAttributes
@@ -352,33 +303,27 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             // CATEGORIES
             {
                 $arrCat = null;
-                
-                if ((in_array($type, self::$_searchaniseTypes)) && ($type != self::VIEW_TAG)) {
-                    $cat_id = (int) $controller->getRequest()->getParam('cat');
-                    if (!empty($cat_id)) {
-                        $arrCat = array();
-                        $arrCat[] = $cat_id; // need if not exist children categories
+                $cat_id = (int) $controller->getRequest()->getParam('cat');
+                if (!empty($cat_id)) {
+                    $arrCat = array();
+                    $arrCat[] = $cat_id; // need if not exist children categories
+                    
+                    $categories = Mage::getModel('catalog/category')
+                        ->getCollection()
+                        ->setStoreId(Mage::app()->getStore()->getId())
+                        ->addFieldToFilter('entity_id', $cat_id)
+                        ->load()
+                        ;
                         
-                        $categories = Mage::getModel('catalog/category')
-                            ->getCollection()
-                            ->setStoreId(Mage::app()->getStore()->getId())
-                            ->addFieldToFilter('entity_id', $cat_id)
-                            ->load()
-                            ;
-                            
-                        if (!empty($categories)) {
-                            foreach ($categories as $cat) {
-                                if (!empty($cat)) {
-                                    $arrCat = $cat->getAllChildren(true);
-                                }
+                    if (!empty($categories)) {
+                        foreach ($categories as $cat) {
+                            if (!empty($cat)) {
+                                $arrCat = $cat->getAllChildren(true);
                             }
                         }
-                    } elseif (($type == self::VIEW_CATEGORY) && (!empty($data))) {
-                        // data = category
-                        $arrCat = $data->getAllChildren(true);
                     }
                 }
-                
+
                 if (!empty($arrCat)) {
                     if (is_array($arrCat)) {
                         $params['restrictBy']['category_ids'] = implode('|', $arrCat);
@@ -452,21 +397,12 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                     }
                 }
             }
-            // TAGS
-            if ((in_array($type, self::$_searchaniseTypes)) && ($type == self::VIEW_TAG)) {
-                if ($data) {
-                    // data = tag
-                    $params['restrictBy']['tag_ids'] = $data->getId();
-                }
-            }
         }
 
-        if (!Mage::helper('searchanise/ApiSe')->getUseNavigation()) {
-            if (empty($params['queryBy']) && (!isset($params['q']) || $params['q'] == '')) {
-                return;
-            }
+        if (empty($params['queryBy']) && (!isset($params['q']) || $params['q'] == '')) {
+            return;
         }
-        
+
         Mage::helper('searchanise')
             ->initSearchaniseRequest()
             ->getSearchaniseRequest()
@@ -477,7 +413,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
         
         //add suggestions
         $suggestionsMaxResults = Mage::helper('searchanise/ApiSe')->getSuggestionsMaxResults();
-        if ((!empty($suggestionsMaxResults)) && (in_array($type, self::$_searchaniseTypes)) && ($type == self::TEXT_FIND)) {
+        if (!empty($suggestionsMaxResults) && $type == self::TEXT_FIND) {
             $res = Mage::helper('searchanise')->getSearchaniseRequest();
             
             if ($res->getTotalProduct() == 0) {
