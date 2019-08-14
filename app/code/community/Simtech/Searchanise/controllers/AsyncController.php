@@ -94,9 +94,10 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
                     @ignore_user_abort(true);
                     @set_time_limit(0);
                     if ($checkKey && $this->getRequest()->getParam('display_errors') === 'Y') {
-                        @error_reporting (E_ALL);
+                        @error_reporting(E_ALL);
                         @ini_set('display_errors', 1);
                     } else {
+                        @error_reporting(0);
                         @ini_set('display_errors', 0);
                     }
                     $flIgnoreProcessing = false;

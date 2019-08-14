@@ -15,6 +15,30 @@
 class Simtech_Searchanise_Block_Product_List_Toolbar extends Mage_Catalog_Block_Product_List_Toolbar
 {
     /**
+     * Retrieve available Order fields list
+     *
+     * @return array
+     */
+    public function getAvailableOrders()
+    {
+        $availableOrders = parent::getAvailableOrders();
+
+        if (Mage::helper('searchanise')->checkSearchaniseIsRunning()) {
+            // Fixme in the feature:
+            // products could have different position in different categories, sort by "position" disabled.
+            if (isset($availableOrders['position'])) {
+                unset($availableOrders['position']);
+                $this->setAvailableOrders($availableOrders);
+                $this->setDefaultOrder('title');
+                $this->setDefaultDirection('asc');
+            }
+            // end
+        }
+
+        return $availableOrders;
+    }
+
+    /**
      * Retrieve available limits for current view mode
      *
      * @return array

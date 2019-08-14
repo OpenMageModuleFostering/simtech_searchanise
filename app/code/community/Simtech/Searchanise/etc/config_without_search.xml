@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>1.1.8</version>
+            <version>2.0.0</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -534,28 +534,30 @@
             <!-- END TAG -->
         </events>
         <blocks>
-            <!-- OVERRIDE BLOCK CATALOG -->
-            <catalog>
-                <rewrite>
-                    <product_list_toolbar>Simtech_Searchanise_Block_Product_List_Toolbar</product_list_toolbar>
-                </rewrite>
-            </catalog>
-            <!-- END -->
-            <!-- OVERRIDE BLOCK CATALOGSEARCH -->
-            <catalogsearch>
-                <rewrite>
-                    <result>Simtech_Searchanise_Block_Result</result>
-                    <autocomplete>Simtech_Searchanise_Block_Autocomplete</autocomplete>
-                </rewrite>
-            </catalogsearch>
-            <!-- END -->
-            <!-- OVERRIDE BLOCK TAG -->
-            <tag>
-                <rewrite>
-                    <product_result>Simtech_Searchanise_Block_Product_Result</product_result>
-                </rewrite>
-            </tag>
-            <!-- END -->
+            <!-- [disabled_searchanise_search] -->
+                <!-- OVERRIDE BLOCK CATALOG -->
+                <!-- <catalog>
+                    <rewrite>
+                        <product_list_toolbar>Simtech_Searchanise_Block_Product_List_Toolbar</product_list_toolbar>
+                    </rewrite>
+                </catalog> -->
+                <!-- END -->
+                <!-- OVERRIDE BLOCK CATALOGSEARCH -->
+                <!-- <catalogsearch>
+                    <rewrite>
+                        <result>Simtech_Searchanise_Block_Result</result>
+                        <autocomplete>Simtech_Searchanise_Block_Autocomplete</autocomplete>
+                    </rewrite>
+                </catalogsearch> -->
+                <!-- END -->
+                <!-- OVERRIDE BLOCK TAG -->
+                <!-- <tag>
+                    <rewrite>
+                        <product_result>Simtech_Searchanise_Block_Product_Result</product_result>
+                    </rewrite>
+                </tag> -->
+                <!-- END -->
+            <!-- [/disabled_searchanise_search] -->
         </blocks>
     </global>
     <default>

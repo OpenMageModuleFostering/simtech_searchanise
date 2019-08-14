@@ -117,15 +117,15 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
 
             } elseif ($type == self::TEXT_ADVANCED_FIND) {
                 $params['sortBy']    = 'title';
-                $params['sortOrder'] = 'desc';
+                $params['sortOrder'] = 'asc';
 
             } elseif ($type == self::VIEW_CATEGORY) {
-                $params['sortBy']    = 'position';
-                $params['sortOrder'] = 'desc';
+                $params['sortBy']    = 'title';
+                $params['sortOrder'] = 'asc';
 
             } elseif ($type == self::VIEW_TAG) {
                 $params['sortBy']    = 'title';
-                $params['sortOrder'] = 'desc';
+                $params['sortOrder'] = 'asc';
             }
 
             if (empty($params['restrictBy'])) {
@@ -255,51 +255,56 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                 $params['restrictBy']['visibility'] = '3|2|4';
             }
         }
-        
+
         if ((!empty($controller)) && (!empty($blockToolbar))) {
             if ($availableOrders = $blockToolbar->getAvailableOrders()) {
                 if (in_array($type, self::$_searchaniseTypes)) {
-                    if ($type == self::TEXT_FIND) {
+                    $fl_change_orders = false;
+                    // Fixme in the feature:
+                    // products could have different position in different categories, sort by "position" disabled.
+                    if (isset($availableOrders['position'])) {
+                        $fl_change_orders = true;
                         unset($availableOrders['position']);
-                        
+                    }
+                    // end
+
+                    if ($type == self::TEXT_FIND) {
                         if (!isset($availableOrders['relevance'])) {
+                            $fl_change_orders = true;
                             $availableOrders = array_merge(
                                 array('relevance' => $controller->__('Relevance')),
                                 $availableOrders
                             );
                         }
-                        
-                        $blockToolbar->setAvailableOrders($availableOrders);
-                        $blockToolbar->setDefaultOrder('relevance');
                     } elseif ($type == self::TEXT_ADVANCED_FIND) {
-                        unset($availableOrders['position']);
-                        $blockToolbar->setAvailableOrders($availableOrders);
-
+                        // Nothing.
+                    } elseif ($type == self::VIEW_CATEGORY) {
+                        // Nothing.
                     } elseif ($type == self::VIEW_TAG) {
-                        unset($availableOrders['position']);
-                        
+                        // Nothing.
+                    }
+                    if ($fl_change_orders) {
                         $blockToolbar->setAvailableOrders($availableOrders);
+                        // If it changed orders then necessary set new default order and default direction.
+                        $blockToolbar->setDefaultOrder($params['sortBy']);
+                        $blockToolbar->setDefaultDirection($params['sortOrder']);
                     }
                 }
             }
 
-            if (isset($params['sortOrder'])) {
-                // need for fix error (when runing first search)
-                $blockToolbar->setDefaultDirection($params['sortOrder']);
-            }
             $sortBy = $blockToolbar->getCurrentOrder();
             $sortOrder = $blockToolbar->getCurrentDirection();
 
-            $max_results = (int) $blockToolbar->getLimit();
-            $start_index = 0;
-            $cur_page = (int) $blockToolbar->getCurrentPage();
-            $start_index = $cur_page > 1 ? ($cur_page - 1) * $max_results : 0;
+            $maxResults = (int) $blockToolbar->getLimit();
+            $startIndex = 0;
+            $curPage = (int) $blockToolbar->getCurrentPage();
+            $startIndex = $curPage > 1 ? ($curPage - 1) * $maxResults : 0;
             
-            if ($max_results) {
-                $params['maxResults'] = $max_results;
+            if ($maxResults) {
+                $params['maxResults'] = $maxResults;
             }
-            if ($start_index) {
-                $params['startIndex'] = $start_index;
+            if ($startIndex) {
+                $params['startIndex'] = $startIndex;
             }
             
             if ($sortBy) {

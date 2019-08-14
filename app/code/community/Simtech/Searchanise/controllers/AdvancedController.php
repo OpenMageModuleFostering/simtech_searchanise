@@ -16,8 +16,7 @@ require_once("Mage/CatalogSearch/controllers/AdvancedController.php");
 class Simtech_Searchanise_AdvancedController extends Mage_CatalogSearch_AdvancedController
 {
     protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
-    protected $_defaultListBlock    = 'catalog/product_list';
-    
+        
     /**
      * Display search result
      */

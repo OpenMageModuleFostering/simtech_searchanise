@@ -16,8 +16,7 @@ require_once("Mage/Catalog/controllers/CategoryController.php");
 class Simtech_Searchanise_CategoryController extends Mage_Catalog_CategoryController
 {
     protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
-    protected $_defaultListBlock    = 'catalog/product_list';
-    
+        
     protected function _getCurCategory()
     {
         $categoryId = (int) $this->getRequest()->getParam('id', false);

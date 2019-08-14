@@ -16,8 +16,7 @@ require_once("Mage/Tag/controllers/ProductController.php");
 class Simtech_Searchanise_ProductController extends Mage_Tag_ProductController
 {
     protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
-    protected $_defaultListBlock    = 'catalog/product_list';
-    
+        
     public function listAction()
     {
         if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {

@@ -453,10 +453,23 @@ class Simtech_Searchanise_Helper_ApiSe
         $ret['last_resync']  = self::formatDate(self::getLastResync(), Mage_Core_Model_Locale::FORMAT_TYPE_MEDIUM, true);
         
         $ret['addon_status'] = self::getStatusModule() == 'Y' ? 'enabled' : 'disabled';
-
         $ret['addon_version'] = (string) Mage::getConfig()->getModuleConfig("Simtech_Searchanise")->version;
+
+        $versionInfo = Mage::getVersionInfo();
+        $coreEdition = 'Community';
+        // [v1.7] [v1.8]
+        if (method_exists('Mage', 'getEdition')) {
+            $coreEdition = Mage::getEdition();
+        // [/v1.7] [/v1.8]
+        // [v1.5] [v1.6]
+        } elseif (isset($versionInfo['minor']) && $versionInfo['minor'] > 6) {
+            $coreEdition = 'Enterprise';
+        }
+        // [/v1.5] [/v1.6]
+        $ret['core_edition'] = $coreEdition;
         $ret['core_version'] = Mage::getVersion();
-        
+        $ret['core_version_info'] = $versionInfo;
+
         return $ret;
     }
 
@@ -1190,7 +1203,7 @@ class Simtech_Searchanise_Helper_ApiSe
             ->addFieldToFilter('entity_id', array("from" => $start, "to" => $end))
             ->setPageSize($step);
         
-        if (!empty($store)) {
+        if ($store) {
             $products = $products->addStoreFilter($store);
         }
         

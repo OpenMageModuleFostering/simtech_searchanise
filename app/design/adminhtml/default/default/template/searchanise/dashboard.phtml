@@ -59,19 +59,19 @@
                     $priceFormat['after'] = $priceFormat['after'] ? 'true' : 'false';
                     
                     echo 'SearchaniseAdmin.Engines.push({';
+                        echo 'Name:"' . addslashes($store->getName()) . '",';
                         echo "PrivateKey:   '{$privateKey}',";
                         echo "LangCode:     '{$store->getCode()}',";
-                        echo "Name :        '{$store->getName()}',";
                         echo "ExportStatus: '{$exportStatus}',";
                         echo 'PriceFormat: {';
+                            echo 'symbol: "' . addslashes($priceFormat['symbol']) . '",';
                             echo "rate :               '{$priceFormat['rate']}',";
                             echo "decimals:            '{$priceFormat['decimals']}',";
                             echo "decimals_separator:  '{$priceFormat['decimals_separator']}',";
                             echo "thousands_separator: '{$priceFormat['thousands_separator']}',";
-                            echo "symbol:              '{$priceFormat['symbol']}',";
                             echo "after:                {$priceFormat['after']}";
-                        echo "}";
-                    echo "});";
+                        echo '}';
+                    echo '});';
                 }
             }
         }

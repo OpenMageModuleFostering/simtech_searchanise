@@ -21,8 +21,7 @@ class Simtech_Searchanise_ResultController extends Mage_CatalogSearch_ResultCont
      * @var string
      */
     protected $_defaultToolbarBlock = 'catalog/product_list_toolbar';
-    protected $_defaultListBlock    = 'catalog/product_list';
-
+    
     /**
      * Retrieve Toolbar block
      *
@@ -51,10 +50,10 @@ class Simtech_Searchanise_ResultController extends Mage_CatalogSearch_ResultCont
         
         $query = Mage::helper('catalogsearch')->getQuery();
         /* @var $query Mage_CatalogSearch_Model_Query */
-        
+
         $query->setStoreId(Mage::app()->getStore()->getId());
-        
-        if ($query->getQueryText()) {
+
+        if ($query->getQueryText() != '') {
             if (Mage::helper('searchanise')->checkEnabled()) {
                 $blockToolbar = $this->_getToolbarBlock();
                                 

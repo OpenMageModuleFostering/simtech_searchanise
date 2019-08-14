@@ -75,9 +75,10 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
             $productIds       = $this->getRequest()->getParam(self::PRODUCT_IDS);
 
             if ($displayErrors) {
-                @error_reporting (E_ALL);
+                @error_reporting(E_ALL);
                 @ini_set('display_errors', 1);
             } else {
+                @error_reporting(0);
                 @ini_set('display_errors', 0);
             }
 
@@ -125,7 +126,7 @@ class Simtech_Searchanise_InfoController extends Mage_Core_Controller_Front_Acti
 
                 echo $this->_profiler();
             } elseif ($resync) {
-                Mage::helper('searchanise/ApiSe')->queueImport();
+                Mage::helper('searchanise/ApiSe')->queueImport($store);
 
             } elseif (!empty($productIds)) {
                 $productFeeds = Mage::helper('searchanise/ApiXML')->generateProductsXML($productIds, $store, false, $checkData);
