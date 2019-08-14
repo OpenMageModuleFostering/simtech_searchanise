@@ -86,7 +86,7 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
 					var __se = document.createElement('script');
 					__se.src = '{$searchWidgetsLink}';
 					__se.setAttribute('async', 'true');
-					document.documentElement.firstChild.appendChild(__se);
+					var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(__se, s);
 				})();
 			//]]>
 			</script>";
