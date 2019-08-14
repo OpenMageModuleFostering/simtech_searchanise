@@ -14,6 +14,8 @@
 
 class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
 {
+    const PARENT_PRIVATE_KEY = 'parent_private_key';
+
     const DISABLE_VAR_NAME = 'disabled_module_searchanise';
     const DISABLE_KEY      = 'Y';
 
@@ -25,8 +27,8 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
     const VIEW_CATEGORY      = 'VIEW_CATEGORY';
     const VIEW_TAG           = 'VIEW_TAG';
     
-    protected $_disableText = null;
-    protected $_debugText   = null;
+    protected $_disableText;
+    protected $_debugText;
     
     protected static $_searchaniseTypes = array(
         self::TEXT_FIND,
@@ -78,7 +80,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
     
     public function getDisableText()
     {
-        if (is_null($this->_disableText)) {
+        if (!isset($this->_disableText)) {
             $this->_disableText = $this->_getRequest()->getParam(self::DISABLE_VAR_NAME);
         }
         
@@ -92,16 +94,40 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
 
     public function getDebugText()
     {
-        if (is_null($this->_debugText)) {
+        if (!isset($this->_debugText)) {
             $this->_debugText = $this->_getRequest()->getParam(self::DEBUG_VAR_NAME);
         }
         
         return $this->_debugText;
     }
     
-    public function checkDebug()
+    public function checkDebug($checkPrivateKey = false)
     {
-        return ($this->getDebugText() == self::DEBUG_KEY) ? true : false;
+        $checkDebug = ($this->getDebugText() == self::DEBUG_KEY) ? true : false;
+
+        if ($checkDebug && $checkPrivateKey) {
+            $checkDebug = $checkDebug && $this->checkPrivateKey();
+        }
+
+        return $checkDebug;
+    }
+
+    public function checkPrivateKey()
+    {
+        static $check;
+
+        if (!isset($check)) {
+            $parentPrivateKey = $this->_getRequest()->getParam(self::PARENT_PRIVATE_KEY);
+            
+            if ((empty($parentPrivateKey)) || 
+                (Mage::helper('searchanise/ApiSe')->getParentPrivateKey() !== $parentPrivateKey)) {
+                $check = false;
+            } else {
+                $check = true;
+            }
+        }
+
+        return $check;
     }
     
     protected function setDefaultSort(&$params, $type)
@@ -116,15 +142,15 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                 $params['sortOrder'] = 'desc';
 
             } elseif ($type == self::TEXT_ADVANCED_FIND) {
-                $params['sortBy']    = 'title';
+                $params['sortBy']    = 'name';
                 $params['sortOrder'] = 'asc';
 
             } elseif ($type == self::VIEW_CATEGORY) {
-                $params['sortBy']    = 'title';
+                $params['sortBy']    = 'name';
                 $params['sortOrder'] = 'asc';
 
             } elseif ($type == self::VIEW_TAG) {
-                $params['sortBy']    = 'title';
+                $params['sortBy']    = 'name';
                 $params['sortOrder'] = 'asc';
             }
 
@@ -308,11 +334,7 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
             }
             
             if ($sortBy) {
-                if ($sortBy == 'name') {
-                    $params['sortBy'] = 'title';
-                } else {
-                    $params['sortBy'] = $sortBy;
-                }
+                $params['sortBy'] = $sortBy;
             }
             
             if ($sortOrder) {

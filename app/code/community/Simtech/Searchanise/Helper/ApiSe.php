@@ -142,7 +142,7 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function getServiceUrl($onlyHttp = true)
     {
         $ret = self::getSetting('service_url');
-
+        
         if (!$onlyHttp) {
             if (Mage::app()->getStore()->isCurrentlySecure()) {
                 $ret = str_replace('http://', 'https://', $ret);
@@ -540,6 +540,11 @@ class Simtech_Searchanise_Helper_ApiSe
     {
         return self::getSetting('products_per_pass');
     }
+
+    public static function getCategoriesPerPass()
+    {
+        return self::getSetting('categories_per_pass');
+    }
     
     public static function getMaxErrorCount()
     {
@@ -666,6 +671,19 @@ class Simtech_Searchanise_Helper_ApiSe
     
     public static function httpRequest($method = Zend_Http_Client::POST, $url = '', $data = array(), $cookies = array(), $basicAuth = array(), $timeout = 0, $maxredirects = 5)
     {
+        if (Mage::helper('searchanise')->checkDebug(true)) {
+            Mage::helper('searchanise/ApiSe')->printR('httpRequest',
+                'method', $method,
+                'url', $url,
+                'data', $data,
+                'cookies', $cookies,
+                'basicAuth', $basicAuth,
+                'timeout', $timeout,
+                'maxredirects', $maxredirects
+            );
+        }
+        $responseHeader = '';
+        $responseBody = '';
         $client = new Zend_Http_Client();
         
         $client->setUri($url);
@@ -684,48 +702,21 @@ class Simtech_Searchanise_Helper_ApiSe
         
         try {
             $response = $client->request($method);
+            $responseBody = $response->getBody();
         } catch (Exception $e) {
             self::log($e->getMessage());
-            
-            return null;
+            if (Mage::helper('searchanise')->checkDebug(true)) {
+                Mage::helper('searchanise/ApiSe')->printR('response', $response);
+            }
         }
-        
-        $responseBody = $response->getBody();
-        
+
         // fixme in the future
         // add getHeader()
         //~ return array($response->getHeader(), $response->getBody());
-        return array('', $response->getBody());
-    }
-
-    /**
-     * 
-     *
-     * @param array $arr_cat
-     * @param Mage_Catalog_Model_Category $category
-     * @return array
-     */
-    public static function getAllChildrenCategories(&$arr_cat, $category, $fl_include_cur_cat = true)
-    {
-        if (empty($arr_cat)) { 
-            $arr_cat = array(); 
+        if (Mage::helper('searchanise')->checkDebug(true)) {
+            Mage::helper('searchanise/ApiSe')->printR('responseBody', $responseBody);
         }
-        
-        if (!empty($category)) {
-            if ($fl_include_cur_cat == true) { 
-                $arr_cat[] = $category->getId(); 
-            }
-            
-            $children_cat = $category->getChildrenCategories();
-            
-            if (!empty($children_cat)) {
-                foreach ($children_cat as $cat) {
-                    self::getAllChildrenCategories($arr_cat, $cat, $fl_include_cur_cat);
-                }
-            }
-        }
-        
-        return $arr_cat;
+        return array($responseHeader, $responseBody);
     }
 
     public static function escapingCharacters($str)
@@ -1205,9 +1196,15 @@ class Simtech_Searchanise_Helper_ApiSe
         return array($startId, $endId);
     }
     
-    public static function getProductIdsFormRange($start, $end, $step, $store = null)
+    public static function getProductIdsFormRange($start, $end, $step, $store = null, $isOnlyActive = false)
     {
         $arrProducts = array();
+        // Need for get correct products.
+        if ($store) {
+            Mage::app()->setCurrentStore($store->getId());
+        } else {
+            Mage::app()->setCurrentStore(0);
+        }
         
         $products = Mage::getModel('catalog/product')
             ->getCollection()
@@ -1215,10 +1212,22 @@ class Simtech_Searchanise_Helper_ApiSe
             ->setPageSize($step);
         
         if ($store) {
-            $products = $products->addStoreFilter($store);
+            $products->addStoreFilter($store);
+        }
+
+        if ($isOnlyActive) {
+            Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($products);
+            // Fixme in the future
+            // It may require to disable "product visibility" filter if "is full feed".
+            if (self::getUseFullFeed() || self::getUseNavigation()) {
+                Mage::getSingleton('catalog/product_visibility')->addVisibleInSiteFilterToCollection($products);
+            } else {
+                Mage::getSingleton('catalog/product_visibility')->addVisibleInSearchFilterToCollection($products);
+            }
+            // end fixme
         }
         
-        $products = $products->load();
+        $products->load();
         if ($products) {
             // Not used because 'arrProducts' comprising 'stock_item' field and is 'array(array())'
             // $arrProducts = $products->toArray(array('entity_id'));
@@ -1349,6 +1358,55 @@ class Simtech_Searchanise_Helper_ApiSe
 
         return $ret;
     }
+    private static function _addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, $isOnlyActive = false)
+    {
+        $i = 0;
+        $step = 50;
+        $start = 0;
+        $max = 0;
+
+        if ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS) {
+            $step = self::getProductsPerPass() * 50;
+            list($start, $max) = self::getMinMaxProductId($store);
+        } elseif ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES) {
+            $step = self::getCategoriesPerPass() * 50;
+            list($start, $max) = Mage::helper('searchanise/ApiCategories')->getMinMaxCategoryId($store);
+        }
+
+        do {
+            $end = $start + $step;
+            $chunkItemIds = null;
+
+            if ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS) {
+                $chunkItemIds = self::getProductIdsFormRange($start, $end, $step, $store, $isOnlyActive);
+            } elseif ($action == Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES) {
+                $chunkItemIds = Mage::helper('searchanise/ApiCategories')->getCategoryIdsFormRange($start, $end, $step, $store);
+            }
+            
+            $start = $end + 1;
+            
+            if (empty($chunkItemIds)) {
+                continue;
+            }
+            $chunkItemIds = array_chunk($chunkItemIds, self::getProductsPerPass());
+            
+            foreach ($chunkItemIds as $itemIds) {
+                $queueData = array(
+                    'data'     => serialize($itemIds),
+                    'action'   => $action,
+                    'store_id' => $store->getId(),
+                );
+                $_result = Mage::getModel('searchanise/queue')->setData($queueData)->save();
+                // It is necessary for save memory.
+                unset($_result);
+                unset($_data);
+                unset($queueData);
+            }
+            
+        } while ($end <= $max);
+
+        return true;
+    }
 
     public static function async($flIgnoreProcessing = false)
     {
@@ -1371,14 +1429,13 @@ class Simtech_Searchanise_Helper_ApiSe
             if (Mage::helper('searchanise')->checkDebug()) {
                 Mage::helper('searchanise/ApiSe')->printR($q);
             }
-            $xml = '';
+            $dataForSend = array();
             $status = true;
-            $data = array();
             $store = Mage::app()->getStore($q['store_id']);
-            $xmlHeader = Mage::helper('searchanise/ApiXML')->getXMLHeader($store);
-            $xmlFooter = Mage::helper('searchanise/ApiXML')->getXMLFooter($store);
-            if ((!empty($q['data'])) && ($q['data'] != Simtech_Searchanise_Model_Queue::NOT_DATA)) {
-                $data = unserialize($q['data']);
+            $header = Mage::helper('searchanise/ApiProducts')->getHeader($store);
+            $data = $q['data'];
+            if (!empty($data) && $data !== Simtech_Searchanise_Model_Queue::NOT_DATA) {
+                $data = unserialize($data);
             }
             
             $privateKey = self::getPrivateKey($store);
@@ -1413,7 +1470,7 @@ class Simtech_Searchanise_Helper_ApiSe
             if ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_PREPARE_FULL_IMPORT) {
                 Mage::getModel('searchanise/queue')
                     ->getCollection()
-                    ->addFieldToFilter('action', array("neq" => Simtech_Searchanise_Model_Queue::ACT_PREPARE_FULL_IMPORT))
+                    ->addFieldToFilter('action', array('neq' => Simtech_Searchanise_Model_Queue::ACT_PREPARE_FULL_IMPORT))
                     ->addFilter('store_id', $store->getId())
                     ->load()
                     ->delete();
@@ -1426,137 +1483,136 @@ class Simtech_Searchanise_Helper_ApiSe
 
                 Mage::getModel('searchanise/queue')->setData($queueData)->save();
                 
-                $i = 0;
-                $step = self::getProductsPerPass() * 50;
+                // <schemas>
+                {
+                    $queueData = array(
+                        'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
+                        'action'   => Simtech_Searchanise_Model_Queue::ACT_DELETE_FACETS_ALL,
+                        'store_id' => $store->getId(),
+                    );
+                    Mage::getModel('searchanise/queue')->setData($queueData)->save();
 
-                list($start, $max) = self::getMinMaxProductId($store);
+                    $queueData = array(
+                        'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
+                        'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES,
+                        'store_id' => $store->getId(),
+                    );
+                    
+                    Mage::getModel('searchanise/queue')->setData($queueData)->save();
+                }
+                // </schemas>
 
-                do {
-                    $end = $start + $step;
-                    
-                    $_productIds = self::getProductIdsFormRange($start, $end, $step, $store);
-                    
-                    $start = $end + 1;
-                    
-                    if (empty($_productIds)) {
-                        continue;
-                    }
-                    $_productIds = array_chunk($_productIds, self::getProductsPerPass());
-                    
-                    foreach ($_productIds as $productIds) {
-                        $_data = serialize($productIds);
-                        $queueData = array(
-                            'data'     => $_data,
-                            'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE,
-                            'store_id' => $store->getId(),
-                        );
-                        $_result = Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                        // It is necessary for save memory.
-                        unset($_result);
-                        unset($_data);
-                        unset($queueData);
-                    }
-                    
-                } while ($end <= $max);
+                self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, true);
+                self::_addTaskByChunk($store, $action = Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES, true);
 
                 self::echoConnectProgress('.');
-                
-                //
-                // reSend all active filters
-                //
-                
-                $queueData = array(
-                    'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
-                    'action'   => Simtech_Searchanise_Model_Queue::ACT_FACET_DELETE_ALL,
-                    'store_id' => $store->getId(),
-                );
-                Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                
-                $filterIds = self::getFiltersIds($store);
-                
-                if (!empty($filterIds)) {
-                    $queueData = array(
-                        'data'     => serialize($filterIds),
-                        'action'   => Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE,
-                        'store_id' => $store->getId(),
-                    );
-                    
-                    Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                }
-                
-                // add facet-categories
-                {
-                    $queueData = array(
-                        'data'     => serialize(Simtech_Searchanise_Model_Queue::DATA_FACET_CATEGORIES),
-                        'action'   => Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE,
-                        'store_id' => $store->getId(),
-                    );
-                    
-                    Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                }
-                                
-                // add facet-tags
-                {
-                    $queueData = array(
-                        'data'     => serialize(Simtech_Searchanise_Model_Queue::DATA_FACET_TAGS),
-                        'action'   => Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE,
-                        'store_id' => $store->getId(),
-                    );
-                    
-                    Mage::getModel('searchanise/queue')->setData($queueData)->save();
-                }
-                
+
                 $queueData = array(
                     'data'     => Simtech_Searchanise_Model_Queue::NOT_DATA,
                     'action'   => Simtech_Searchanise_Model_Queue::ACT_END_FULL_IMPORT,
                     'store_id' => $store->getId(),
                 );
-                
+
                 Mage::getModel('searchanise/queue')->setData($queueData)->save();
                 
                 $status = true;
-                
+
             } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_START_FULL_IMPORT) {
-                $status = self::sendRequest('/api/state/update', $privateKey, array('full_import' => self::EXPORT_STATUS_START), true);
+                $status = self::sendRequest('/api/state/update/json', $privateKey, array('full_import' => self::EXPORT_STATUS_START), true);
                 
                 if ($status == true) {
                     self::setExportStatus(self::EXPORT_STATUS_PROCESSING, $store);
                 }
                 
             } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_END_FULL_IMPORT) {
-                $status = self::sendRequest('/api/state/update', $privateKey, array('full_import' => self::EXPORT_STATUS_DONE), true);
+                $status = self::sendRequest('/api/state/update/json', $privateKey, array('full_import' => self::EXPORT_STATUS_DONE), true);
                 
                 if ($status == true) {
                     self::setExportStatus(self::EXPORT_STATUS_SENT, $store);
                     self::setLastResync(self::getTime());
                 }
-                
-            } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_FACET_DELETE_ALL) {
-                $status = self::sendRequest('/api/facets/delete', $privateKey, array('all' => true), true);
-                
-            } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE) {
-                if ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_CATEGORIES) {
-                    $xml .= Mage::helper('searchanise/ApiXML')->generateFacetXMLCategories();
-                    
-                } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_PRICES) {
-                    $xml .= Mage::helper('searchanise/ApiXML')->generateFacetXMLPrices();
 
-                } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_TAGS) {
-                    $xml .= Mage::helper('searchanise/ApiXML')->generateFacetXMLTags();
-                    
-                } else {
-                    $xml .= Mage::helper('searchanise/ApiXML')->generateFacetXMLFilters($data, $store);
+            } elseif (Simtech_Searchanise_Model_Queue::isDeleteAllAction($q['action'])) {
+                $type = Simtech_Searchanise_Model_Queue::getAPITypeByAction($q['action']);
+                if ($type) {
+                    $status = self::sendRequest("/api/{$type}/delete/json", $privateKey, array('all' => true), true);
                 }
-                
-                if (!empty($xml)) {
-                    $status = self::sendRequest('/api/facets/update', $privateKey, array('data' => $xmlHeader . $xml . $xmlFooter), true);
-                }
-                
-            } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_FACET_DELETE) {
-                if (!empty($data)) {
-                    foreach ($data as $facetAttribute) {
-                        $status = self::sendRequest('/api/facets/delete', $privateKey, array('attribute' => $facetAttribute), true);
+
+            } elseif (Simtech_Searchanise_Model_Queue::isUpdateAction($q['action'])) {
+                $dataForSend = array();
+
+                if ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS) {
+                    $items = Mage::helper('searchanise/ApiProducts')->generateProductsFeed($data, $store);
+                    if (!empty($items)) {
+                        $dataForSend = array(
+                            'header' => $header,
+                            'items'  => $items,
+                        );
+                    }
+                } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_UPDATE_CATEGORIES) {
+                    $categories = Mage::helper('searchanise/ApiCategories')->generateCategoriesFeed($data, $store, true);
+                    if (!empty($categories)) {
+                        $dataForSend = array(
+                            'header'     => $header,
+                            'categories' => $categories,
+                        );
+                    }
+
+                } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_UPDATE_PAGES) {
+                    // Fixme in the future
+                    // $pages = Mage::helper('searchanise/ApiPages')->generatePagesFeed($data, $store);
+                    // if (!empty($pages)) {
+                    //     $dataForSend = array(
+                    //         'header' => $header,
+                    //         'pages'  => $pages,
+                    //     );
+                    // }
+                    // end fixme
+                } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES) {
+                    $schema = null;
+
+                    if ($data == Simtech_Searchanise_Model_Queue::DATA_CATEGORIES) {
+                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaCategories();
                         
+                    } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_PRICES) {
+                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaPrices();
+
+                    } elseif ($data == Simtech_Searchanise_Model_Queue::DATA_FACET_TAGS) {
+                        $schema = Mage::helper('searchanise/ApiProducts')->getSchemaTags();
+                        
+                    } else {
+                        $schema = Mage::helper('searchanise/ApiProducts')->getSchema($data, $store);
+                    }
+                    
+                    if (!empty($schema)) {
+                        $dataForSend = array(
+                            'header' => $header,
+                            'schema' => $schema,
+                        );
+                    }
+                }
+
+                if (!empty($dataForSend)) {
+                    $dataForSend = Mage::helper('core')->jsonEncode($dataForSend, Zend_Json::TYPE_ARRAY);
+
+                    if (function_exists('gzcompress')) {
+                        $dataForSend = gzcompress($dataForSend, self::COMPRESS_RATE);
+                    }
+                    $status = self::sendRequest('/api/items/update/json', $privateKey, array('data' => $dataForSend), true);
+                }
+                
+            } elseif (Simtech_Searchanise_Model_Queue::isDeleteAction($q['action'])) {
+                $type = Simtech_Searchanise_Model_Queue::getAPITypeByAction($q['action']);
+                if ($type) {
+                    foreach ($data as $itemId) {
+                        $dataForSend = array();
+                        if ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_DELETE_FACETS) {
+                            $dataForSend['attribute'] = $itemId;
+                        } else {
+                            $dataForSend['id'] = $itemId;
+                        }
+                        $status = self::sendRequest("/api/{$type}/delete/json", $privateKey, $dataForSend, true);
+
                         self::echoConnectProgress('.');
                         
                         if ($status == false) {
@@ -1564,36 +1620,10 @@ class Simtech_Searchanise_Helper_ApiSe
                         }
                     }
                 }
-                
-            } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_UPDATE) {
-                $xml .= Mage::helper('searchanise/ApiXML')->generateProductsXML($data, $store);
-                
-                if (!empty($xml)) {
-                    if (function_exists('gzcompress')) {
-                        $data = gzcompress($xmlHeader . $xml . $xmlFooter, self::COMPRESS_RATE);
-                    } else {
-                        $data = $xmlHeader . $xml . $xmlFooter;
-                    }
-                    $status = self::sendRequest('/api/items/update', $privateKey, array('data' => $data), true);
-                }
-                
-            } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_DELETE) {
-                foreach ($data as $product_id) {
-                    $status = self::sendRequest('/api/items/delete', $privateKey, array('id' => $product_id), true);
-                    
-                    self::echoConnectProgress('.');
-                    
-                    if ($status == false) {
-                        break;
-                    }
-                }
-                
-            } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_DELETE_ALL) {
-                $status = self::sendRequest('/api/items/delete', $privateKey, array('all' => true), true);
-                
+
             } elseif ($q['action'] == Simtech_Searchanise_Model_Queue::ACT_PHRASE) {
                 foreach ($data as $phrase) {
-                    $status = self::sendRequest('/api/phrases/update', $privateKey, array('phrase' => $phrase), true);
+                    $status = self::sendRequest('/api/phrases/update/json', $privateKey, array('phrase' => $phrase), true);
                     
                     self::echoConnectProgress('.');
                     
@@ -1643,77 +1673,86 @@ class Simtech_Searchanise_Helper_ApiSe
         if (!empty($stores)) {
             foreach ($stores as $store) {
                 $privateKey = self::getPrivateKey($store);
-                self::sendRequest('/api/state/update', $privateKey, array('addon_status' => $status), true);
+                self::sendRequest('/api/state/update/json', $privateKey, array('addon_status' => $status), true);
             }
         }
     }
     
     public static function sendRequest($urlPart, $privateKey, $data, $onlyHttp = true)
     {
-        $ret = null;
+        $result = false;
         
         if (!empty($privateKey)) {
             $params = array('private_key' => $privateKey) + $data;
             
-            list($h, $result) = self::httpRequest(Zend_Http_Client::POST, self::getServiceUrl($onlyHttp) . $urlPart, $params, array(), array(), self::getRequestTimeout());
-            
-            $ret = self::parseResponse($result, false);
+            list($h, $body) = self::httpRequest(Zend_Http_Client::POST, self::getServiceUrl($onlyHttp) . $urlPart, $params, array(), array(), self::getRequestTimeout());
+
+            if ($body) {
+                $result = self::parseResponse($body, false);
+            }
             
             self::setLastRequest(self::getTime());
         }
         
-        return $ret;
+        return $result;
     }
     
     /**
      * Parse response from service
      *
-     * @param string $res xml service response
-     * @return mixed false if errors returned, true if response is ok, xml object if data was passed in the response
+     * @param string $jsonData json service response
+     * @return mixed false if errors returned, true if response is ok, object if data was passed in the response
      */
-    public static function parseResponse($res, $showNotification = false)
+    public static function parseResponse($jsonData, $showNotification = false, $objectDecodeType = Zend_Json::TYPE_ARRAY)
     {
-        $xml = simplexml_load_string($res, null, LIBXML_NOERROR);
-        
-        if (empty($res) || $xml === false) {
-            return false;
+        $result = false;
+        $data = false;
+
+        try {         
+            if (trim($jsonData) === 'CLOSED;' || trim($jsonData) === 'CLOSED') {
+                $data = false;
+            } else {
+                $data = Mage::helper('core')->jsonDecode($jsonData, $objectDecodeType);
+            }
+        } catch (Exception $e) {
+            if ($objectDecodeType == Zend_Json::TYPE_ARRAY) {
+                return self::parseResponse($jsonData, $showNotification, Zend_Json::TYPE_OBJECT);
+            }
+            self::log('parseResponse : jsonDecode: ' . $e->getMessage());
+            $data = false;
         }
-        
-        if (!empty($xml->error)) {
-            foreach ($xml->error as $e) {
+
+        if (empty($data)) {
+            $result = false;
+        } elseif (is_array($data) && !empty($data['errors'])) {
+            foreach ($data['errors'] as $e) {
                 if ($showNotification == true) {
-                    self::setNotification('E', Mage::helper('searchanise')->__('Error'), 'Searchanise: ' . (string)$e);
+                    self::setNotification('E', Mage::helper('searchanise')->__('Error'), 'Searchanise: parseResponse: ' . $e->getMessage());
                 }
+                self::log('parseResponse : ' . $e->getMessage());
             }
             
-            return false;
-        } elseif (strtolower($xml->getName()) == 'ok') {
-            return true;
+            $result = false;
+        } elseif ($data === 'ok') {
+            $result = true;
         } else {
-            return $xml;
+            $result = $data;
         }
+
+        return $result;
     }
     
-    public static function parseStateResponse($xml, $element = false)
+    public static function parseStateResponse($response)
     {
-        $res = array();
-        if (!is_object($xml)) {
-            return false;
-        }
+        $result = array();
         
-        if ($xml->getName() == 'variable') {
-            foreach ($xml as $v) {
-                $res[$v->getName()] = (string)$v;
+        if (!empty($response['variable'])) {
+            foreach ($response['variable'] as $name => $v) {
+                $result[$name] = (string) $v;
             }
-        } else {
-            return false;
         }
         
-        if (!empty($element)) {
-            $res = isset($res[$element])? $res[$element] : false;
-        }
-        
-        return $res;
+        return $result;
     }
     
     public static function deleteKeys($stores = null)
@@ -1746,18 +1785,17 @@ class Simtech_Searchanise_Helper_ApiSe
         
         foreach ($stores as $store) {
             if (self::getExportStatus($store) == self::EXPORT_STATUS_SENT && ((self::getTime() - self::getLastRequest()) > self::getRequestTimeout() || $skipTimeCheck == true)) {
-                $xml = self::sendRequest('/api/state/get', self::getPrivateKey($store), array('status' => '', 'full_import' => ''), true);
-                
-                $variables = self::parseStateResponse($xml);
+                $response = self::sendRequest('/api/state/get/json', self::getPrivateKey($store), array('status' => '', 'full_import' => ''), true);
+                $variable = self::parseStateResponse($response);
 
-                if ((!empty($variables)) && (isset($variables['status']))) {
-                    if (($variables['status'] == self::STATUS_NORMAL) && 
-                        (isset($variables['full_import'])) &&
-                        ($variables['full_import'] == self::EXPORT_STATUS_DONE)) {
+                if ((!empty($variable)) && (isset($variable['status']))) {
+                    if (($variable['status'] == self::STATUS_NORMAL) && 
+                        (isset($variable['full_import'])) &&
+                        ($variable['full_import'] == self::EXPORT_STATUS_DONE)) {
                         $skipTimeCheck = true;
                         self::setExportStatus(self::EXPORT_STATUS_DONE, $store);
 
-                    } elseif ($variables['status'] == self::STATUS_DISABLED) {
+                    } elseif ($variable['status'] == self::STATUS_DISABLED) {
                         self::setExportStatus(self::EXPORT_STATUS_NONE, $store);
                     }
                 }
@@ -1773,24 +1811,7 @@ class Simtech_Searchanise_Helper_ApiSe
 
         return $result;
     }
-    
-    public static function getPriceFilters($store = null)
-    {
-        $filters = Mage::getResourceModel('catalog/product_attribute_collection')
-            ->setItemObjectClass('catalog/resource_eav_attribute')
-            ->addIsFilterableFilter()
-            ->addFieldToFilter('frontend_input', array('eq' => 'price'));
-        
-        
-        if (!empty($store)) {
-            $filters->addStoreLabel($store->getId());
-        }
-        
-        $filters->load();
-        
-        return $filters;
-    }
-    
+
     public static function getStoreByWebsiteIds($websiteIds = array())
     {
         $ret = array();
@@ -1867,6 +1888,9 @@ class Simtech_Searchanise_Helper_ApiSe
     public static function log($message = '', $type = 'Error')
     {
         Mage::log("Searchanise # {$type}: {$message}");
+        if (Mage::helper('searchanise')->checkDebug(true)) {
+            Mage::helper('searchanise/ApiSe')->printR("Searchanise # {$type}: {$message}");
+        }
         
         return true;
     }

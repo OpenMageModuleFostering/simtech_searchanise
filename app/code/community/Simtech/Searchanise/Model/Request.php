@@ -539,7 +539,7 @@ class Simtech_Searchanise_Model_Request extends Mage_Core_Model_Abstract
                 // fixme in the future
                 // error calc count product in category
                 $arr_cat = null;
-                Mage::helper('searchanise/ApiSe')->getAllChildrenCategories($arr_cat, $category);
+                Mage::helper('searchanise/ApiCategories')->getAllChildrenCategories($arr_cat, $category);
                 
                 foreach ($res['facets'] as $facet) {
                     if ($facet['attribute'] == 'category_ids') {

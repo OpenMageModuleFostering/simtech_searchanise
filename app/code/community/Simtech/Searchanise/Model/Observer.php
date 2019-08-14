@@ -14,8 +14,8 @@
 
 class Simtech_Searchanise_Model_Observer
 {
-    protected static $newAttributes = array();
     protected static $productIdsInCategory = array();
+    protected static $isExistsCategory = false;
     
     public function __construct() 
     {
@@ -122,7 +122,7 @@ class Simtech_Searchanise_Model_Observer
                     
                     if (!empty($storeIds)) {
                         foreach ($storeIds as $k => $storeId) {
-                            Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE, $product->getId(), null, $storeId);
+                            Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, $product->getId(), null, $storeId);
                         }
                     }
                 }
@@ -149,7 +149,7 @@ class Simtech_Searchanise_Model_Observer
             foreach ($productIds as $k => $productId) {
                 if ($action == 'add') {
                     foreach ($storeIds as $k => $storeId) {
-                        Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE, $productId, null, $storeId);
+                        Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS, $productId, null, $storeId);
                     }
                     
                 } elseif ($action == 'remove') {
@@ -162,7 +162,7 @@ class Simtech_Searchanise_Model_Observer
                         if (!empty($storeIdsOld)) {
                             foreach ($storeIds as $k => $storeId) {
                                 if (in_array($storeId, $storeIdsOld)) {
-                                    Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_DELETE, $productId, null, $storeId);
+                                    Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_DELETE_PRODUCTS, $productId, null, $storeId);
                                 }
                             }
                         }
@@ -176,6 +176,27 @@ class Simtech_Searchanise_Model_Observer
     
     // FOR CATEGORIES //
     /**
+     * Delete category before
+     *
+     * @param   Varien_Event_Observer $observer
+     * @return  Mage_CatalogIndex_Model_Observer
+     */
+    public function catalogCategoryDeleteBefore(Varien_Event_Observer $observer)
+    {
+        $category = $observer->getEvent()->getCategory();
+        
+        if ($category && $category->getId()) {
+            // For category
+            Mage::getModel('searchanise/queue')->addActionCategory($category, Simtech_Searchanise_Model_Queue::ACT_DELETE_CATEGORIES);
+            
+            // For products from category
+            $products = $category->getProductCollection();
+        }
+        
+        return $this;
+    }
+
+    /**
      * Save category before
      *
      * @param   Varien_Event_Observer $observer
@@ -184,14 +205,20 @@ class Simtech_Searchanise_Model_Observer
     public function catalogCategorySaveBefore(Varien_Event_Observer $observer)
     {
         $category = $observer->getEvent()->getCategory();
-        
+
         if ($category && $category->getId()) {
+            self::$isExistsCategory = true; // New category doesn't run the catalogCategorySaveBefore function.
+            // For category
+            Mage::getModel('searchanise/queue')->addActionCategory($category);
+
+            // For products from category
+            // It save before because products could remove from $category.
             $products = $category->getProductCollection();
             Mage::getModel('searchanise/queue')->addActionProducts($products);
 
             // save current products ids
             // need for find new products in catalogCategorySaveAfter
-            if (!empty($products)) {
+            if ($products) {
                 self::$productIdsInCategory = array();
                 
                 foreach ($products as $product) {
@@ -214,8 +241,14 @@ class Simtech_Searchanise_Model_Observer
     public function catalogCategorySaveAfter(Varien_Event_Observer $observer)
     {
         $category = $observer->getEvent()->getCategory();
-        
+
         if ($category && $category->getId()) {
+            // For category
+            if (!self::$isExistsCategory) { // if category was created now
+                Mage::getModel('searchanise/queue')->addActionCategory($category);
+            }
+
+            // For products from category
             $products = $category->getProductCollection();
 
             if (!empty($products)) {
@@ -234,6 +267,8 @@ class Simtech_Searchanise_Model_Observer
                 }
             }
         }
+        self::$isExistsCategory = false;
+        self::$productIdsInCategory = array();
         
         return $this;
     }
@@ -250,21 +285,8 @@ class Simtech_Searchanise_Model_Observer
         
         if ($category && $category->getId()) {
             $products = $category->getProductCollection();
-
-            if (!empty($products)) {
-                if (empty(self::$productIdsInCategory)) {
-                    Mage::getModel('searchanise/queue')->addActionProducts($products);
-                } else {
-                    $productIds = array();
-                    foreach ($products as $product) {
-                        $id = $product->getId();
-                        if ((!empty($id)) && (!in_array($id, self::$productIdsInCategory))) {
-                            $productIds[] = $id;
-                        }
-                    }
-
-                    Mage::getModel('searchanise/queue')->addActionProductIds($productIds);
-                }
+            if ($products) {
+                Mage::getModel('searchanise/queue')->addActionProducts($products);
             }
         }
         
@@ -310,7 +332,7 @@ class Simtech_Searchanise_Model_Observer
             }
             
             if (!empty($productIds)) {
-                Mage::getModel('searchanise/queue')->addActionProductIds($productIds , Simtech_Searchanise_Model_Queue::ACT_UPDATE);
+                Mage::getModel('searchanise/queue')->addActionProductIds($productIds , Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS);
             }
         }
         
@@ -328,7 +350,7 @@ class Simtech_Searchanise_Model_Observer
         $idToDelete = $observer->getData('idToDelete');
         
         if (!empty($idToDelete)) {
-            Mage::getModel('searchanise/queue')->addActionProductIds($idToDelete, Simtech_Searchanise_Model_Queue::ACT_DELETE);
+            Mage::getModel('searchanise/queue')->addActionProductIds($idToDelete, Simtech_Searchanise_Model_Queue::ACT_DELETE_PRODUCTS);
         }
         
         return $this;
@@ -504,12 +526,10 @@ class Simtech_Searchanise_Model_Observer
         
         if (!empty($stores)) {
             if ($section == 'catalog') {
-                foreach ($stores as $k => $store) {
-                    $filters = Mage::helper('searchanise/ApiSe')->getPriceFilters($store);
-                    
-                    if (!empty($filters)) {
-                        foreach ($filters as $filter) {
-                            Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE, $filter->getId(), $store);
+                foreach ($stores as $k => $store) {                   
+                    if ($attributes = Mage::helper('searchanise/ApiProducts')->getProductAttributes(null, $store, true)) {
+                        foreach ($attributes as $attribute) {
+                            Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES, $attribute->getId(), $store);
                         }
                     }
 
@@ -517,7 +537,7 @@ class Simtech_Searchanise_Model_Observer
                     {
                         $queueData = array(
                             'data'     => serialize(Simtech_Searchanise_Model_Queue::DATA_FACET_PRICES),
-                            'action'   => Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE,
+                            'action'   => Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES,
                             'store_id' => $store->getId(),
                         );
                         
@@ -546,36 +566,27 @@ class Simtech_Searchanise_Model_Observer
         $attribute = $observer->getEvent()->getAttribute();
         
         if ($attribute && $attribute->getId()) {
-            $flFacet = Mage::helper('searchanise/ApiXML')->checkFacet($attribute);
+            $isFacet = Mage::helper('searchanise/ApiProducts')->isFacet($attribute);
             
-            $flFacetOld = null;
+            $isFacetPrev = null;
             
-            $attributeOld = Mage::getModel('catalog/entity_attribute')
+            $prevAttribute = Mage::getModel('catalog/entity_attribute')
                 ->load($attribute->getId());
             
-            if (!empty($attributeOld)) {
-                $flFacetOld = Mage::helper('searchanise/ApiXML')->checkFacet($attributeOld);
+            if ($prevAttribute) {
+                $isFacetPrev = Mage::helper('searchanise/ApiProducts')->isFacet($prevAttribute);
             }
             
-            if ($flFacet != $flFacetOld) {
-                if ($flFacet) {
-                    Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE, $attribute->getId());
-                } else {
-                    Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_FACET_DELETE, $attribute->getId());
+            if ($isFacet != $isFacetPrev) {
+                if (!$isFacet) {
+                    Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_DELETE_FACETS, $attribute->getId());
                 }
             }
         }
 
-        if (($attribute) && (!$attribute->getId())) {
-            self::$newAttributes[$attribute->getData('attribute_code')] = true;
-        } else {
-            // uncomment if need this checking
-            // self::$newAttributes[$attribute->getData('attribute_code')] = false;
-        }
-
         return $this;
     }
-    
+
     /**
      * Save attribute
      *
@@ -587,18 +598,7 @@ class Simtech_Searchanise_Model_Observer
         $attribute = $observer->getEvent()->getAttribute();
         
         if ($attribute && $attribute->getId()) {
-            $attributeCode = $attribute->getData('attribute_code');
-            
-            if ((!empty(self::$newAttributes)) && 
-                (array_key_exists($attributeCode, self::$newAttributes)) && 
-                (self::$newAttributes[$attributeCode])) {
-                $flFacet = Mage::helper('searchanise/ApiXML')->checkFacet($attribute);
-
-                
-                if ($flFacet) {
-                    Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_FACET_UPDATE, $attribute->getId());
-                }
-            }
+            Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_UPDATE_ATTRIBUTES, $attribute->getId());
         }
 
         return $this;
@@ -615,10 +615,8 @@ class Simtech_Searchanise_Model_Observer
         $attribute = $observer->getEvent()->getAttribute();
         
         if ($attribute && $attribute->getId()) {
-            $flFacet = Mage::helper('searchanise/ApiXML')->checkFacet($attribute);
-            
-            if ($flFacet) {
-                Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_FACET_DELETE, $attribute->getId());
+            if (Mage::helper('searchanise/ApiProducts')->isFacet($attribute)) {
+                Mage::getModel('searchanise/queue')->addAction(Simtech_Searchanise_Model_Queue::ACT_DELETE_FACETS, $attribute->getId());
             }
         }
         
@@ -639,7 +637,7 @@ class Simtech_Searchanise_Model_Observer
         if (!empty($tag)) {
             $productIds = $tag->getRelatedProductIds();
             
-            Mage::getModel('searchanise/queue')->addActionProductIds($productIds, Simtech_Searchanise_Model_Queue::ACT_UPDATE);
+            Mage::getModel('searchanise/queue')->addActionProductIds($productIds, Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS);
         }
         
         return $this;
@@ -658,7 +656,7 @@ class Simtech_Searchanise_Model_Observer
         if (!empty($tag)) {
             $productIds = $tag->getRelatedProductIds();
             
-            Mage::getModel('searchanise/queue')->addActionProductIds($productIds, Simtech_Searchanise_Model_Queue::ACT_UPDATE);
+            Mage::getModel('searchanise/queue')->addActionProductIds($productIds, Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS);
         }
         
         return $this;
@@ -684,7 +682,7 @@ class Simtech_Searchanise_Model_Observer
             if (!empty($tag)) {
                 $productIds = $tag->getRelatedProductIds();
                 
-                Mage::getModel('searchanise/queue')->addActionProductIds($productIds, Simtech_Searchanise_Model_Queue::ACT_UPDATE);
+                Mage::getModel('searchanise/queue')->addActionProductIds($productIds, Simtech_Searchanise_Model_Queue::ACT_UPDATE_PRODUCTS);
             }
         }
         

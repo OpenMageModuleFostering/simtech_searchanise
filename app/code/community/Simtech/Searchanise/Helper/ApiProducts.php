@@ -12,14 +12,14 @@
 * "copyright.txt" FILE PROVIDED WITH THIS DISTRIBUTION PACKAGE.            *
 ****************************************************************************/
 
-class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
+class Simtech_Searchanise_Helper_ApiProducts extends Mage_Core_Helper_Data
 {
-    const XML_END_LINE = "\n";
-
-    const WEIGHT_SHORT_DESCRIPTION =  0; // not need because use in summary
-    const WEIGHT_DESCRIPTION       = 40;
+    const WEIGHT_SHORT_DESCRIPTION   =  0; // not need because use in summary
+    const WEIGHT_DESCRIPTION         = 40;
+    const WEIGHT_DESCRIPTION_GROUPED = 30;
 
     const WEIGHT_TAGS              = 60;
+    const WEIGHT_CATEGORIES        = 60;
 
     // <if_isSearchable>
     const WEIGHT_META_TITLE        =  80;
@@ -94,7 +94,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
     }
 
     /**
-     * generateProductImage
+     * generateImage
      *
      * @param Mage_Catalog_Model_Product $product
      * @param bool $flagKeepFrame
@@ -102,15 +102,15 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
      * @param int $height
      * @return Mage_Catalog_Model_Product_Image $image
      */
-    private static function generateProductImage($product, $imageType = 'small_image', $flagKeepFrame = true, $width = 70, $height = 70)
+    private static function generateImage($object, $imageType = 'small_image', $flagKeepFrame = true, $width = 70, $height = 70)
     {
-        $image = '';
-        $productImage = $product->getData($imageType);
+        $image = null;
+        $objectImage = $object->getData($imageType);
 
-        if (!empty($productImage) && $productImage != 'no_selection') {
+        if (!empty($objectImage) && $objectImage != 'no_selection') {
             try {
                 $image = Mage::helper('catalog/image')
-                    ->init($product, $imageType)
+                    ->init($object, $imageType)
                     ->constrainOnly(true)        // Guarantee, that image picture will not be bigger, than it was.
                     ->keepAspectRatio(true)      // Guarantee, that image picture width/height will not be distorted.
                     ->keepFrame($flagKeepFrame); // Guarantee, that image will have dimensions, set in $width/$height
@@ -120,7 +120,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                 }
             } catch (Exception $e) {
                 // image not exists
-                $image = '';
+                $image = null;
             }
         }
 
@@ -136,19 +136,18 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
      * @param int $height
      * @return Mage_Catalog_Model_Product_Image $image
      */
-    private static function getProductImageLink($product, $flagKeepFrame = true, $width = 70, $height = 70)
+    public static function getProductImageLink($product, $flagKeepFrame = true, $width = 70, $height = 70)
     {
-        $image = '';
+        $image = null;
 
         if ($product) {
+            $image = self::generateImage($product, 'small_image', $flagKeepFrame, $width, $height);
+            
             if (empty($image)) {
-                $image = self::generateProductImage($product, 'small_image', $flagKeepFrame, $width, $height);
+                $image = self::generateImage($product, 'image', $flagKeepFrame, $width, $height);
             }
             if (empty($image)) {
-                $image = self::generateProductImage($product, 'image', $flagKeepFrame, $width, $height);
-            }
-            if (empty($image)) {
-                $image = self::generateProductImage($product, 'thumbnail', $flagKeepFrame, $width, $height);
+                $image = self::generateImage($product, 'thumbnail', $flagKeepFrame, $width, $height);
             }
         }
 
@@ -231,7 +230,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
      * @param float $groupPrice
      * @return float
      */
-    private static function getProductMinimalPrice($product, $store, $childrenProducts = null, $customerGroupId = null, $groupPrice = null)
+    private static function _getProductMinimalPrice($product, $store, $childrenProducts = null, $customerGroupId = null, $groupPrice = null)
     {
         $minimalPrice = false;
 
@@ -260,7 +259,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
             foreach ($childrenProducts as $childrenProductsKey => $childrenProduct) {
                 if ($childrenProduct) {
-                    $minimalPriceChildren = self::getProductMinimalPrice($childrenProduct, $store, null, $customerGroupId);
+                    $minimalPriceChildren = self::_getProductMinimalPrice($childrenProduct, $store, null, $customerGroupId);
 
                     if (($minimalPriceChildren < $minimalPrice) || 
                         ($minimalPrice == '')) {
@@ -304,7 +303,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
                 if ($isCorrectProduct) {
                     try {
-                        // $minimalPrice = $product->getFinalPrice();
+                        $minimalPrice = $product->getFinalPrice();
                     } catch (Exception $e) {
                         $minimalPrice = false;
                         Mage::helper('searchanise/ApiSe')->log($e->getMessage(), "Error: Script couldn't get final price for product ID = " . $product->getId());
@@ -321,39 +320,42 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
         return $minimalPrice;
     }
-
-    private static function _generateProductPricesXML($product, $childrenProducts = null, $store = null)
+    private static function _getCustomerGroups()
     {
-        $result = '';
-
         static $customerGroups;
 
         if (!isset($customerGroups)) {
             $customerGroups = Mage::getModel('customer/group')->getCollection()->load();
         }
 
-        if ($customerGroups) {
+        return $customerGroups;
+    }
+        
+
+    private static function _generateProductPrices(&$item, $product, $childrenProducts = null, $store = null)
+    {
+        if ($customerGroups = self::_getCustomerGroups()) {
             foreach ($customerGroups as $keyCustomerGroup => $customerGroup) {
                 // It is needed because the 'setCustomerGroupId' function works only once.
                 $productCurrentGroup = clone $product;
                 $customerGroupId = $customerGroup->getId();
 
-                $price = self::getProductMinimalPrice($productCurrentGroup, $store, $childrenProducts, $customerGroupId);
+                $price = self::_getProductMinimalPrice($productCurrentGroup, $store, $childrenProducts, $customerGroupId);
                 if ($price != '') {
                     $price = round($price, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
                 }
 
                 if ($customerGroupId == Mage_Customer_Model_Group::NOT_LOGGED_IN_ID) {
-                    $result .= '<cs:price>' . $price . '</cs:price>'. self::XML_END_LINE;
+                    $item['price'] = $price;
                     $defaultPrice = $price; // default price get for not logged user
                 }
                 $label_ = Mage::helper('searchanise/ApiSe')->getLabelForPricesUsergroup() . $customerGroup->getId();
-                $result .= '<cs:attribute name="' . $label_ . '" type="float">' . $price . '</cs:attribute>' . self::XML_END_LINE;
+                $item[$label_] = $price;
                 unset($productCurrentGroup);
             }
         }
 
-        return $result;
+        return true;
     }
 
     /**
@@ -389,129 +391,154 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         return $childrenProducts;
     }
 
-    private static function getIdAttributeValuesXML($value)
+    private static function _getIdAttributeValues($value)
     {
-        $strIdValues = '';
+        $values = '';
 
         $arrValues = explode(',', $value);
         if (!empty($arrValues)) {
             foreach ($arrValues as $v) {
                 if ($v != '') {
                     // Example values: '0', '1', 'AF'.
-                    $strIdValues .= '<value><![CDATA[' . $v . ']]></value>';
+                    $values[] = $v;
                 }
             }
         }
 
-        return $strIdValues;
+        return $values;
     }
 
-    private static function getIdAttributesValuesXML($values)
+    private static function _getTextAttributeValues($product, $attributeCode, $inputType, $store = null)
     {
-        $strIdValues = '';
-
-        foreach ($values as $v) {
-            $strIdValues .= self::getIdAttributeValuesXML($v);
+        static $arrTextValues = array();
+        $key = $attributeCode;
+        if ($store) {
+            $key .= '__' . $store->getId();
         }
 
-        return $strIdValues;
-    }
+        if (!isset($arrTextValues[$key])) {
+            $values = array();
+            // Dependency of store already exists
+            $textValues = $product->getResource()->getAttribute($attributeCode)->getFrontend()->getValue($product);
 
-    private static function addArrTextAttributeValues($product, $attributeCode, $inputType, &$arrTextValues)
-    {
-        $textValues = $product->getResource()->getAttribute($attributeCode)->getFrontend()->getValue($product);
-
-        if ($textValues != '') {
-            if ($inputType == 'multiselect') {
-                $arrValues = explode(',', $textValues);
-                if (!empty($arrValues)) {
-                    foreach ($arrValues as $v) {
-                        if ($v != '') {
-                            $trimValue = trim($v);
-                            if ($trimValue != '' && !in_array($trimValue, $arrTextValues)) {
-                                $arrTextValues[] .= $trimValue;
-                             }
-                        }
-                    }
+            if ($textValues != '') {
+                if ($inputType == 'multiselect') {
+                    $values = explode(',', $textValues);
+                } else {
+                    $values[] = $textValues;
                 }
-            } else {
-                $trimValue = trim($textValues);
-                $arrTextValues[] .= $trimValue;
             }
+
+            $arrTextValues[$key] = $values;
         }
 
-        return true;
+        return $arrTextValues[$key];
     }
 
-    private static function getTextAttributesValuesXML($products, $attributeCode, $inputType)
+    private static function _getProductAttributeTextValues($products, $attributeCode, $inputType, $store = null)
     {
-        $strTextValues = '';
         $arrTextValues = array();
 
         foreach ($products as $p) {
-            self::addArrTextAttributeValues($p, $attributeCode, $inputType, $arrTextValues);
-        }
-        if ($arrTextValues) {
-            foreach ($arrTextValues as $textValue) {
-                $strTextValues .= '<value><![CDATA[' . $textValue . ']]></value>';
+            if ($values = self::_getTextAttributeValues($p, $attributeCode, $inputType, $store)) {
+                foreach ($values as $key => $value) {
+                    $trimValue = trim($value);
+                    if ($trimValue != '' && !in_array($trimValue, $arrTextValues)) {
+                        $arrTextValues[] = $value;
+                    }
+                }
             }
         }
 
-        return $strTextValues;
+        return $arrTextValues;
     }
 
-    private static function _generateProductAttributesXML($product, $childrenProducts = null, $unitedProducts = null, $store = null)
+    private static function _getIdAttributesValues($products, $attributeCode)
     {
-        $result = '';
+        $values = array();
 
-        static $attributes;
+        foreach ($products as $productKey => $product) {
+            $value = $product->getData($attributeCode);
+            if ($value == '') {
+                // Nothing.
+            } elseif (is_array($value) && empty($value)) {
+                // Nothing.
+            } else {
+                if (!in_array($value, $values)) {
+                    $values[] = $value;
+                }
+            }
+        }
 
-        if (!isset($attributes)) {
-            $attributes = Mage::getResourceModel('catalog/product_attribute_collection');
-            $attributes
-                ->setItemObjectClass('catalog/resource_eav_attribute')
-                // ->setOrder('position', 'ASC') // not need, because It will slow with "order"
-                ->load();
+        return $values;
+    }
+
+    public static function getProductAttributes($attributeIds = Simtech_Searchanise_Model_Queue::NOT_DATA, $store = null, $isPrice = false)
+    {
+        if ($attributeIds === Simtech_Searchanise_Model_Queue::NOT_DATA) {
+            static $allAttributes;
+
+            if (!isset($allAttributes)) {
+                $allAttributes = Mage::getResourceModel('catalog/product_attribute_collection');
+                $allAttributes
+                    ->setItemObjectClass('catalog/resource_eav_attribute')
+                    // ->setOrder('position', 'ASC') // not need, because It will slow with "order"
+                    ->load();
+            }
+
+            return $allAttributes;
+        }
+
+        $attributes = Mage::getResourceModel('catalog/product_attribute_collection')
+            ->setItemObjectClass('catalog/resource_eav_attribute');
+
+        // fixme in the future
+        // need delete
+        // if ($store) {
+            // $filters->addStoreLabel($store->getId());
+        // }
+        // end fixme
+
+        if (is_array($attributeIds)) {
+            $attributes->addFieldToFilter('main_table.attribute_id', array('in' => $attributeIds));
+        } else {
+            $attributes->addFieldToFilter('main_table.attribute_id', array('eq' => $attributeIds));
+        }
+        if ($isPrice) {
+            $attributes->addFieldToFilter('main_table.frontend_input', array('eq' => 'price'));
         }
         
+        $attributes->load();
+
+        return $attributes;        
+    }
+
+    private static function _generateProductAttributes(&$item, $product, $childrenProducts = null, $unitedProducts = null, $store = null)
+    {
+        $attributes = self::getProductAttributes(Simtech_Searchanise_Model_Queue::NOT_DATA, $store);
+        
         if ($attributes) {
+            $requiredAttributes = self::_getRequiredAttributes();
             $useFullFeed = Mage::helper('searchanise/ApiSe')->getUseFullFeed();
+
             foreach ($attributes as $attribute) {
                 $attributeCode = $attribute->getAttributeCode();
                 $value = $product->getData($attributeCode);
 
                 // unitedValues - main value + childrens values
-                $unitedValues = array();
-                {
-                    if ($value == '') {
-                        // nothing
-                    } elseif (is_array($value) && empty($value)) {
-                        // nothing
-                    } else {
-                        $unitedValues[] = $value;
-                    }                    
-                    if ($childrenProducts) {
-                        foreach ($childrenProducts as $childrenProductsKey => $childrenProduct) {
-                            $childValue = $childrenProduct->getData($attributeCode);
-                            if ($childValue == '') {
-                                // Nothing.
-                            } elseif (is_array($childValue) && empty($childValue)) {
-                                // Nothing.
-                            } else {
-                                if (!in_array($childValue, $unitedValues)) {
-                                    $unitedValues[] = $childValue;
-                                }
-                            }
-                        }
-                    }
-                }
+                $unitedValues = self::_getIdAttributesValues($unitedProducts, $attributeCode);
+               
                 $inputType = $attribute->getData('frontend_input');
                 $isSearchable = $attribute->getIsSearchable();
                 $isVisibleInAdvancedSearch = $attribute->getIsVisibleInAdvancedSearch();
                 $usedForSortBy = $attribute->getUsedForSortBy();
                 $attributeName = 'attribute_' . $attribute->getId();
-                $attributeWeight = 0;
-                $isRequireAttribute = $useFullFeed || $isSearchable || $isVisibleInAdvancedSearch || $usedForSortBy;
+
+                $isNecessaryAttribute = $useFullFeed || $isSearchable || $isVisibleInAdvancedSearch || $usedForSortBy || in_array($attributeCode, $requiredAttributes);
+                
+                if (!$isNecessaryAttribute) {
+                    continue;
+                }
 
                 if (empty($unitedValues)) {
                     // nothing
@@ -521,28 +548,15 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                         // already defined in the '<cs:price>' field
 
                     } elseif ($attributeCode == 'status' || $attributeCode == 'visibility') {
-                        $result .= '<cs:attribute name="' . $attributeCode . '" type="text" text_search="N">';
-                        $result .= $value;
-                        $result .= '</cs:attribute>' . self::XML_END_LINE;
+                        $item[$attributeCode] = $value;
 
                     } elseif ($attributeCode == 'weight') {
-                        $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode, $inputType);
-                        if ($strTextValues != '') {
-                            $result .= '<cs:attribute name="' . $attributeCode . '" type="float" text_search="N">';
-                            // fixme in the future
-                            // need for fixed bug of Server
-                            $result .= ' ';
-                            // end fixme
-                            $result .= $strTextValues;
-                            $result .= '</cs:attribute>' . self::XML_END_LINE;
-                        }
+                        $item[$attributeCode] = $unitedValues;
 
                     // <dates>
                     } elseif ($attributeCode == 'created_at' || $attributeCode == 'updated_at') {
                         $dateTimestamp = Mage::getModel('core/date')->timestamp(strtotime($value));
-                        $result .= '<cs:attribute name="' . $attributeCode .'" type="int" text_search="N">';
-                        $result .= $dateTimestamp;
-                        $result .= '</cs:attribute>' . self::XML_END_LINE;
+                        $item[$attributeCode] = $dateTimestamp;
                     // </dates>
 
                     } elseif ($attributeCode == 'has_options') {
@@ -559,133 +573,43 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                     // nothing
                     // fixme in the future if need
                 
+                } elseif ($attributeCode == 'description') {
+                    if ($value != '') {
+                        $item[$attributeCode] = $value;
+                    }
+                    $item['se_grouped_' . $attributeCode] = $unitedValues;
+
                 } elseif (
                     $attributeCode == 'short_description' || 
-                    $attributeCode == 'description' ||
                     $attributeCode == 'meta_title' || 
                     $attributeCode == 'meta_description' || 
                     $attributeCode == 'meta_keyword') {
 
-                    if ($isRequireAttribute) {
-                        if ($isSearchable) {
-                            if ($attributeCode == 'short_description') {
-                                $attributeWeight = self::WEIGHT_SHORT_DESCRIPTION;
-                            } elseif ($attributeCode == 'description') {
-                                $attributeWeight = self::WEIGHT_DESCRIPTION;
-                            } elseif ($attributeCode == 'meta_title') {
-                                $attributeWeight = self::WEIGHT_META_TITLE;
-                            } elseif ($attributeCode == 'meta_description') {
-                                $attributeWeight = self::WEIGHT_META_DESCRIPTION;
-                            } elseif ($attributeCode == 'meta_keyword') {
-                                $attributeWeight = self::WEIGHT_META_KEYWORDS;
-                            } else {
-                                // Nothing.
-                            }
-                        }
-
-                        $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode, $inputType);
-                        if ($strTextValues != '') {
-                            if ($attributeCode == 'description') {
-                                if ($value != '') {
-                                    $result .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                                    $result .= '<![CDATA[' . $value . ']]>';
-                                    $result .= '</cs:attribute>' . self::XML_END_LINE;
-                                }
-
-                                $result .= '<cs:attribute name="se_grouped_' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                            } else {
-                                $result .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                            }
-                            // fixme in the future
-                            // need for fixed bug of Server
-                            $result .= ' ';
-                            // end fixme
-                            $result .= $strTextValues;
-                            $result .= '</cs:attribute>' . self::XML_END_LINE;
-                        }
-                    }
+                    $item[$attributeCode] = $unitedValues;
 
                 } elseif ($inputType == 'price') {
                     // Other attributes with type 'price'.
-                    $result .= '<cs:attribute name="' . $attributeName .'" type="float">';
-                    $result .= $value;
-                    $result .= '</cs:attribute>' . self::XML_END_LINE;
+                    $item[$attributeCode] = $unitedValues;
 
                 } elseif ($inputType == 'select' || $inputType == 'multiselect') {
                     // <id_values>
-                    if ($strIdValues = self::getIdAttributesValuesXML($unitedValues)) {
-                        $result .= '<cs:attribute name="' . $attributeName .'" type="text">';
-                        // fixme in the future
-                        // need for fixed bug of Server
-                        $result .= ' ';
-                        // end fixme
-
-                        $result .= $strIdValues;
-                        $result .= '</cs:attribute>' . self::XML_END_LINE;
-                    }
-                    // </id_values>
+                    $item[$attributeName] = $unitedValues;
 
                     // <text_values>
-                    if ($isRequireAttribute) {
-                        $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode, $inputType);
-
-                        if ($strTextValues != '') {
-                            if ($isSearchable) {
-                                $attributeWeight = self::WEIGHT_SELECT_ATTRIBUTES;
-                            }
-
-                            $result .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                            // fixme in the future
-                            // need for fixed bug of Server
-                            $result .= ' ';
-                            // end fixme
-                            $result .= $strTextValues;
-                            $result .= '</cs:attribute>' . self::XML_END_LINE;
-                        }
-                    }
-                    // </text_values>
+                    $unitedTextValues = self::_getProductAttributeTextValues($unitedProducts, $attributeCode, $inputType, $store);
+                    $item[$attributeCode] = $unitedTextValues;
 
                 } elseif ($inputType == 'text' || $inputType == 'textarea') {
-                    if ($isRequireAttribute) {
-                        $strTextValues = self::getTextAttributesValuesXML($unitedProducts, $attributeCode, $inputType);
-
-                        if ($strTextValues != '') {
-                            if ($isSearchable) {
-                                if ($inputType == 'text') {
-                                    $attributeWeight = self::WEIGHT_TEXT_ATTRIBUTES;
-                                } elseif ($inputType == 'textarea') {
-                                    $attributeWeight = self::WEIGHT_TEXT_AREA_ATTRIBUTES;
-                                } else {
-                                    // Nothing.
-                                }
-                            }
-                            $result .= '<cs:attribute name="' . $attributeName .'" type="text" text_search="Y" weight="' . $attributeWeight . '">';
-                            // fixme in the future
-                            // need for fixed bug of Server
-                            $result .= ' ';
-                            // end fixme
-                            $result .= $strTextValues;
-                            $result .= '</cs:attribute>' . self::XML_END_LINE;
-                        }
-                    }
+                    $item[$attributeCode] = $unitedValues;
+                    
                 } elseif ($inputType == 'date') {
-                    if ($isRequireAttribute) {
-                        $dateTimestamp = Mage::getModel('core/date')->timestamp(strtotime($value));
-                        $result .= '<cs:attribute name="' . $attributeCode .'" type="int" text_search="N">';
-                        $result .= $dateTimestamp;
-                        $result .= '</cs:attribute>' . self::XML_END_LINE;
-                    }
+                    $dateTimestamp = Mage::getModel('core/date')->timestamp(strtotime($value));
+                    $item[$attributeCode] = $dateTimestamp;
                 } elseif ($inputType == 'media_image') {
-                    if ($isRequireAttribute) {
-                        $image = self::generateProductImage($product, $attributeCode, true, 0, 0);
-                        if (!empty($image)) {
-                            $imageLink = '' . $image;
-                            if (!empty($imageLink)) {
-                                $result .= '<cs:attribute name="' . $attributeCode .'" type="text" text_search="N" weight="0"><![CDATA[';
-                                $result .= $imageLink;
-                                $result .= ']]></cs:attribute>' . self::XML_END_LINE;
-                            }
-                        }
+                    $image = self::generateImage($product, $attributeCode, true, 0, 0);
+                    if (!empty($image)) {
+                        $imageLink = '' . $image;
+                        $item[$attributeCode] = $imageLink;
                     }
                 } elseif ($inputType == 'gallery') {
                     // Nothing.
@@ -695,18 +619,18 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             }
         }
 
-        return $result;
+        return $item;
     }
 
-    public static function generateProductXML($product, $store = null, $checkData = true)
+    public static function generateProductFeed($product, $store = null, $checkData = true)
     {
-        $entry = '';
+        $item = array();
         if ($checkData) {
             if (!$product ||
                 !$product->getId() ||
                 !$product->getName()
                 ) {
-                return $entry;
+                return $item;
             }
         }
 
@@ -718,36 +642,31 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             }
         }
 
-        $entry .= '<entry>' . self::XML_END_LINE;
-        $entry .= '<id>' . $product->getId() . '</id>' . self::XML_END_LINE;
-        
-        $entry .= '<title><![CDATA[' . $product->getName() . ']]></title>' . self::XML_END_LINE;
+        $item['id'] = $product->getId();      
+        $item['title'] = $product->getName();
         
         $summary = $product->getData('short_description');
         
         if ($summary == '') { 
             $summary = $product->getData('description');
         }
-        $entry .= '<summary><![CDATA[' . $summary. ']]></summary>' . self::XML_END_LINE;
+        $item['summary'] = $summary;
         
         $productUrl = $product->getProductUrl(false);
-        $productUrl = htmlspecialchars($productUrl);
-        $entry .= '<link href="' . $productUrl . '" />' . self::XML_END_LINE;
-        $entry .= '<cs:product_code><![CDATA[' . $product->getSku() . ']]></cs:product_code>' . self::XML_END_LINE;
+        $item['link'] = $productUrl;
+        $item['product_code'] = $product->getSku();
 
-        $entry .= self::_generateProductPricesXML($product, $childrenProducts, $store);
+        self::_generateProductPrices($item, $product, $childrenProducts, $store);
 
         // <quantity>
         {
             $quantity = self::getProductQty($product, $store, $unitedProducts);
 
-            $entry .= '<cs:quantity>' . ceil($quantity) . '</cs:quantity>' . self::XML_END_LINE;
-            $isInStock = $quantity > 0;
-            if ($isInStock) {
-                $entry .= '<cs:attribute name="is_in_stock" type="text" text_search="N">' . $isInStock . '</cs:attribute>' . self::XML_END_LINE;
-            }
+            $item['quantity'] = ceil($quantity);
+
+            $item['is_in_stock'] = $quantity > 0;
             $quantity = round($quantity, Mage::helper('searchanise/ApiSe')->getFloatPrecision());
-            $entry .= '<cs:attribute name="quantity_decimals" type="float">' . $quantity . '</cs:attribute>' . self::XML_END_LINE;
+            $item['quantity_decimals'] = $quantity;
         }
         // </quantity>
 
@@ -756,10 +675,14 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             // Show images without white field
             // Example: image 360 x 535 => 47 х 70
             $flagKeepFrame = false;
-            $imageLink = self::getProductImageLink($product, $flagKeepFrame);
+            $image =  self::getProductImageLink($product, $flagKeepFrame);
+            
+            if ($image) {
+                $imageLink = '' . $image;
 
-            if ($imageLink != '') {
-                $entry .= '<cs:image_link><![CDATA[' . $imageLink . ']]></cs:image_link>' . self::XML_END_LINE;
+                if ($imageLink != '') {
+                    $item['image_link'] = '' . $imageLink;
+                }
             }
         }
         // </image_link>
@@ -768,83 +691,59 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         {
             // Fixme in the feature:
             // products could have different position in different categories, sort by "position" disabled.
-            $position = $product->getData('position');
-            if ($position) {
-                $entry .= '<cs:attribute name="position" type="int">';
-                $entry .= $product->getData('position');
-                
-                $entry .= '</cs:attribute>' . self::XML_END_LINE;
-            }
+            $item['position'] = $product->getData('position');
             // end
         }
         // </attributes_position>
         
-        $entry .= self::_generateProductAttributesXML($product, $childrenProducts, $unitedProducts, $store);
+        self::_generateProductAttributes($item, $product, $childrenProducts, $unitedProducts, $store);
 
         // <categories>
         {
-            $entry .= '<cs:attribute name="category_ids" type="text">';
-            // fixme in the future
-            // need for fixed bug of Server
-            $entry .= ' ';
-            $nameCategories = ' ';
-            // end fixme
+            
             $categoryIds = $product->getCategoryIds();
             if (!empty($categoryIds)) {
+                $categoryNames = array();
+
                 foreach ($categoryIds as $catKey => $categoryId) {
-                    $entry .= '<value><![CDATA[' . $categoryId . ']]></value>';
+                    // fixme int the future
+                    // check value for other language
                     $category = Mage::getModel('catalog/category')->load($categoryId);
                     if ($category) {
-                        $nameCategories .= '<value><![CDATA[' . $category->getName() . ']]></value>';
+                        $categoryNames[] = $category->getName();
                     }
                 }
-            }
-            $entry .= '</cs:attribute>' . self::XML_END_LINE;
 
-            if ($nameCategories != ' ') {
-                $attributeWeight = 0;
-                $entry .= '<cs:attribute name="categories" type="text" text_search="N" weight="' . $attributeWeight . '">';
-                $entry .= $nameCategories;
-                $entry .= '</cs:attribute>' . self::XML_END_LINE;
+                $item['category_ids'] = $categoryIds;
+                $item['categories'] = $categoryNames;
             }
         }
         // </categories>
 
         // <tags>
         {
-            $strTagIds = '';
-            $strTagNames = '';
+            $tagIds = array();
+            $tagNames = array();
 
             $tags = self::getTagCollection($product, $store);
             
             if ($tags && count($tags) > 0) {
                 foreach ($tags as $tag) {
                     if ($tag) {
-                        $strTagIds .= '<value><![CDATA[' . $tag->getId() . ']]></value>';
-                        $strTagNames .= '<value><![CDATA[' . $tag->getName() . ']]></value>';
+                        $tagIds[] = $tag->getId();
+                        $tagNames[] = $tag->getName();
                     }
                 }
             }
 
-            if ($strTagIds != '') {
-                $entry .= '<cs:attribute name="tag_ids" type="text" text_search="N">';
-                // fixme in the future
-                // need for fixed bug of Server
-                $entry .= ' ';
-                // end fixme
-                $entry .= $strTagIds;
-                $entry .= '</cs:attribute>' . self::XML_END_LINE;
-
-                $entry .= '<cs:attribute name="tags" type="text" text_search="Y" weight="' . self::WEIGHT_TAGS .'">';
-                $entry .= $strTagNames;
-                $entry .= '</cs:attribute>' . self::XML_END_LINE;
+            if (!empty($tagIds)) {
+                $item['tag_ids'] = $tagIds;
+                $item['tags'] = $tagNames;
             }
         }
         // </tags>
 
-        $entry .= '</entry>' . self::XML_END_LINE;
-        
-        return $entry;
+        return $item;
     }
     
     public static function getOptionCollection($filter, $store = null)
@@ -862,9 +761,9 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
             ->load();
     }
     
-    public static function getPriceNavigationStep($store = null)
+    private static function _getPriceNavigationStep($store = null)
     {
-        if (empty($store)) {
+        if (!$store) {
             $store = Mage::app()->getStore(0);
         }
         
@@ -877,7 +776,7 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         return null;
     }
 
-    public static function checkFacet($attribute)
+    public static function isFacet($attribute)
     {
         $isFilterable         = $attribute->getIsFilterable();
         $isFilterableInSearch = $attribute->getIsFilterableInSearch();
@@ -885,65 +784,59 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         return $isFilterable || $isFilterableInSearch;
     }
 
-    public static function generateFacetXMLFromFilter($filter, $store = null)
+    private static function _generateFacetFromFilter($attribute, $store = null)
     {
-        $entry = '';
+        $item = array();
 
-        if (self::checkFacet($filter)) {
+        if (self::isFacet($attribute)) {
             $attributeType = '';
 
-            $inputType = $filter->getData('frontend_input');
+            $inputType = $attribute->getData('frontend_input');
 
             // "Can be used only with catalog input type Dropdown, Multiple Select and Price".
             if (($inputType == 'select') || ($inputType == 'multiselect')) {
-                $attributeType = '<cs:type>select</cs:type>' . self::XML_END_LINE;
+                $item['type'] = 'select';
                 
             } elseif ($inputType == 'price') {
-                $attributeType = '<cs:type>dynamic</cs:type>' . self::XML_END_LINE;
-                $step = self::getPriceNavigationStep($store);
-                
+                $item['type'] = 'dynamic';
+                $step = self::_getPriceNavigationStep($store);
+
                 if (!empty($step)) {
-                    $attributeType .= '<cs:min_range>' . $step . '</cs:min_range>' . self::XML_END_LINE;
+                    $item['min_range'] = $step;
                 }
             } else {
-                // attribute is not filtrable
-                // nothing
+                // Nothing.
             }
 
-            if ($attributeType != '') {
-                $entry = '<entry>' . self::XML_END_LINE;
-                $entry .= '<title><![CDATA[' . $filter->getData('frontend_label') . ']]></title>' . self::XML_END_LINE;
-                $entry .= '<cs:position>' . $filter->getPosition() . '</cs:position>' . self::XML_END_LINE;           
+            if (isset($item['type'])) {
+                $item['title'] = $attribute->getData('frontend_label');
+                $item['position'] =  $attribute->getPosition();
 
-                $attributeCode = $filter->getAttributeCode();
+                $attributeCode = $attribute->getAttributeCode();
 
                 if ($attributeCode == 'price') {
                     $labelAttribute = 'price';
                 } else {
-                    $labelAttribute = 'attribute_' . $filter->getId();
+                    $labelAttribute = 'attribute_' . $attribute->getId();
                 }
                 
-                $entry .= '<cs:attribute>' . $labelAttribute . '</cs:attribute>' . self::XML_END_LINE;
-                $entry .= $attributeType;
-                $entry .= '</entry>' . self::XML_END_LINE;
+                $item['attribute'] =  $labelAttribute;
             }
         }
         
-        return $entry;
+        return $item;
     }
     
-    public static function generateFacetXMLFromCustom($title = '', $position = 0, $attribute = '', $type = '')
+    private static function _generateFacetFromCustom($title = '', $position = 0, $attribute = '', $type = '')
     {
-        $entry = '<entry>' . self::XML_END_LINE;
+        $facet = array();
         
-        $entry .= '<title><![CDATA[' . $title .']]></title>' . self::XML_END_LINE;
-        $entry .= '<cs:position>' . $position . '</cs:position>' . self::XML_END_LINE;
-        $entry .= '<cs:attribute>' . $attribute . '</cs:attribute>' . self::XML_END_LINE;
-        $entry .= '<cs:type>' . $type .'</cs:type>' . self::XML_END_LINE;
-        
-        $entry .= '</entry>' . self::XML_END_LINE;
-        
-        return $entry;
+        $facet['title'] = $title;
+        $facet['position'] = $position;
+        $facet['attribute'] = $attribute;
+        $facet['type'] = $type;
+
+        return $facet;
     }
 
     private static function validateProductIds($productIds, $store = null)
@@ -1030,20 +923,22 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
         }
 
         static $arrProducts = array();
-        $keyProductIds = implode('_', $productIds) . ':' .  ($store ? $store->getId() : '0') . ':' . $customerGroupId . ':' . (self::$isGetProductsByItems ? '1' : '0');
-        
-        if (isset($arrProducts[$keyProductIds])) {
-            // Nothing.
-        } else {
-            $products = null;
 
-            // Need for generate correct url and get right data.
-            if ($store) {
-                Mage::app()->setCurrentStore($store->getId());
+        $keyProducts = '';
+        if ($productIds) {
+            if (is_array($productIds)) {
+                $keyProducts .= implode('_', $productIds);
             } else {
-                Mage::app()->setCurrentStore(0);
+                $keyProducts .= $productIds;
             }
+        }
+        $keyProducts .= ':' .  ($store ? $store->getId() : '0');
+        $keyProducts .= ':' .  $customerGroupId;
+        $keyProducts .= ':' .  (self::$isGetProductsByItems ? '1' : '0');
 
+        if (isset($arrProducts[$keyProducts])) {
+            // Nothing
+        } else {
             $products = Mage::getModel('catalog/product')
                 ->getCollection()
                 ->addAttributeToSelect('*')
@@ -1063,134 +958,374 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
                     ->addStoreFilter($store);
             }
             
-            // if (!empty($productIds)) {
+            if ($productIds !== Simtech_Searchanise_Model_Queue::NOT_DATA) {
                 // Already exist automatic definition 'one value' or 'array'.
                 $products->addIdFilter($productIds);
-            // }
+            }
 
             $products->load();
 
-            $arrProducts[$keyProductIds] = $products;
-        }
-
-        $resultProducts = $arrProducts[$keyProductIds];
-
-        if ($resultProducts && ($store || $customerGroupId != null)) {
-            foreach ($resultProducts as $key => &$product) {
-                if ($product) {
-                    if ($store) {
-                        $product->setWebsiteId($store->getWebsiteId());
-                    }
-                    if ($customerGroupId != null) {
-                        $product->setCustomerGroupId($customerGroupId);
+            // Fixme in the future
+            // Maybe create cache without customerGroupId and setCustomerGroupId after using cache.
+            if ($products && ($store || $customerGroupId != null)) {
+                foreach ($products as $key => &$product) {
+                    if ($product) {
+                        if ($store) {
+                            $product->setWebsiteId($store->getWebsiteId());
+                        }
+                        if ($customerGroupId != null) {
+                            $product->setCustomerGroupId($customerGroupId);
+                        }
                     }
                 }
             }
+            // end fixme
+
+            $arrProducts[$keyProducts] = $products;
         }
 
-        return $resultProducts;
+        return $arrProducts[$keyProducts];
     }
 
     // Main functions //
-    public static function generateProductsXML($productIds = null, $store = null, $checkData = true)
+    public static function generateProductsFeed($productIds = null, $store = null, $checkData = true)
     {
-        $ret = '';
+        $items = array();
 
         $products = self::getProducts($productIds, $store, null);
 
         if ($products) {
             foreach ($products as $product) {
-                $ret .= self::generateProductXML($product, $store, $checkData);
+                if ($item = self::generateProductFeed($product, $store, $checkData)) {
+                    $items[] = $item;
+                }
             }
         }
 
-        return $ret;
+        return $items;
     }
-    
-    public static function generateFacetXMLFilters($attributeIds = null, $store = null)
-    {
-        $ret = '';
-        
-        $filters = Mage::getResourceModel('catalog/product_attribute_collection')
-            ->setItemObjectClass('catalog/resource_eav_attribute');
 
-        if ($store) {
-            $filters->addStoreLabel($store->getId());
+    private static function _getRequiredAttributes()
+    {
+        static $requiredAttributes;
+
+        if (!isset($requiredAttributes)) {
+            $requiredAttributes = array(
+                'status',
+                'visibility',
+                'price',
+                'weight',
+                'created_at',
+                'updated_at',
+            );
         }
 
-        if (!empty($attributeIds)) {
-            if (is_array($attributeIds)) {
-                $filters->addFieldToFilter('main_table.attribute_id', array('in' => $attributeIds));
-            } else {
-                $filters->addFieldToFilter('main_table.attribute_id', array('eq' => $attributeIds));
+        return $requiredAttributes;
+    }
+
+    public static function getSchemaAttribute($attribute)
+    {
+        $items = array();
+
+        $requiredAttributes = self::_getRequiredAttributes();
+        $useFullFeed = Mage::helper('searchanise/ApiSe')->getUseFullFeed();
+
+        $attributeCode = $attribute->getAttributeCode();
+        $inputType = $attribute->getData('frontend_input');
+        $isSearchable = $attribute->getIsSearchable();
+        $isVisibleInAdvancedSearch = $attribute->getIsVisibleInAdvancedSearch();
+        $usedForSortBy = $attribute->getUsedForSortBy();
+        $attributeName = 'attribute_' . $attribute->getId();
+
+        $isNecessaryAttribute = $useFullFeed || $isSearchable || $isVisibleInAdvancedSearch || $usedForSortBy || in_array($attributeCode, $requiredAttributes);
+        
+        if (!$isNecessaryAttribute) {
+            return $items;
+        }
+
+        $name = $attribute->getAttributeCode();
+        $title = $attribute->getData('frontend_label');
+        $type = '';
+        $textSearch = $isSearchable ? 'Y' : 'N';
+        $attributeWeight = 0;
+
+        // <system_attributes>
+        if ($attributeCode == 'price') {
+            $type = 'float';
+            $textSearch = 'N';
+
+        } elseif ($attributeCode == 'status' || $attributeCode == 'visibility') {
+            $type = 'text';
+            $textSearch = 'N';
+        } elseif ($attributeCode == 'weight') {
+            $type = 'float';
+            $textSearch = 'N';
+        // <dates>
+        } elseif ($attributeCode == 'created_at' || $attributeCode == 'updated_at') {
+            $type = 'int';
+            $textSearch = 'N';
+            if ($attributeCode == 'created_at'){
+                $title = Mage::helper('searchanise')->__('Date Created');
+            } elseif ($attributeCode == 'updated_at') {
+                $title = Mage::helper('searchanise')->__('Date Updated');
+            }
+        // </dates>
+        } elseif ($attributeCode == 'has_options') {
+        } elseif ($attributeCode == 'required_options') {
+        } elseif ($attributeCode == 'custom_layout_update') {
+        } elseif ($attributeCode == 'tier_price') { // quantity discount
+        } elseif ($attributeCode == 'image_label') {
+        } elseif ($attributeCode == 'small_image_label') {
+        } elseif ($attributeCode == 'thumbnail_label') {
+        } elseif ($attributeCode == 'url_key') { // seo name
+        // <system_attributes>
+
+        } elseif ($attributeCode == 'group_price') {
+            // nothing
+            // fixme in the future if need
+        } elseif (
+            $attributeCode == 'short_description' || 
+            $attributeCode == 'description' ||
+            $attributeCode == 'meta_title' || 
+            $attributeCode == 'meta_description' || 
+            $attributeCode == 'meta_keyword') {
+
+            if ($isSearchable) {
+                if ($attributeCode == 'short_description') {
+                    $attributeWeight = self::WEIGHT_SHORT_DESCRIPTION;
+                } elseif ($attributeCode == 'description') {
+                    $attributeWeight = self::WEIGHT_DESCRIPTION;
+                } elseif ($attributeCode == 'meta_title') {
+                    $attributeWeight = self::WEIGHT_META_TITLE;
+                } elseif ($attributeCode == 'meta_description') {
+                    $attributeWeight = self::WEIGHT_META_DESCRIPTION;
+                } elseif ($attributeCode == 'meta_keyword') {
+                    $attributeWeight = self::WEIGHT_META_KEYWORDS;
+                } else {
+                    // Nothing.
+                }
+            }
+            $type = 'text';
+            if ($attributeCode == 'description') {
+                $items[] = array(
+                    'name'   => 'se_grouped_' . $attributeCode,
+                    'title'  => $attribute->getData('frontend_label') . ' - Grouped',
+                    'type'   => $type,
+                    'weight' => $isSearchable ? self:: WEIGHT_DESCRIPTION_GROUPED : 0,
+                    'text_search' => $textSearch,
+                );
+            }
+
+        } elseif ($inputType == 'price') {
+            $type = 'float';
+
+        } elseif ($inputType == 'select' || $inputType == 'multiselect') {
+            $type = 'text';
+            $items[] = array(
+                'name'   => $name,
+                'title'  => $title,
+                'type'   => $type,
+                'weight' => $isSearchable ? self::WEIGHT_SELECT_ATTRIBUTES : 0,
+                'text_search' => $textSearch,
+            );
+            $name = $attributeName;
+            $title = $title . ' - IDs';
+            $textSearch = 'N';
+
+        } elseif ($inputType == 'text' || $inputType == 'textarea') {
+            if ($isSearchable) {
+                if ($inputType == 'text') {
+                    $attributeWeight = self::WEIGHT_TEXT_ATTRIBUTES;
+                } elseif ($inputType == 'textarea') {
+                    $attributeWeight = self::WEIGHT_TEXT_AREA_ATTRIBUTES;
+                }
+            }
+            $type = 'text';
+            
+        } elseif ($inputType == 'date') {
+            $type = 'int';
+
+        } elseif ($inputType == 'media_image') {
+            $type = 'text';
+
+        } elseif ($inputType == 'gallery') {
+            // Nothing.
+        } else {
+            // Attribute not will use.
+        }
+
+        if ($type) {
+            $item = array(
+                'name'   => $name,
+                'title'  => $title,
+                'type'   => $type,
+                'weight' => $attributeWeight,
+                'text_search' => $textSearch,
+            );
+
+            if ($facet = self::_generateFacetFromFilter($attribute)) {
+                $item['facet'] = $facet;
+            }
+            $items[] = $item;
+        }
+
+        return $items;
+    }
+    
+    public static function getSchemaPrices($store = null)
+    {
+        return self::getSchema(null, $store, true);
+    }
+
+    public static function getSchemaCustomerGroupsPrices()
+    {
+        $items = array();
+
+        if ($customerGroups = self::_getCustomerGroups()) {
+            foreach ($customerGroups as $keyCustomerGroup => $customerGroup) {
+                $label = Mage::helper('searchanise/ApiSe')->getLabelForPricesUsergroup() . $customerGroup->getId();
+                $items[] = array(
+                    'name'  => $label,
+                    'title' => 'Price for ' .  $customerGroup->getData('customer_group_code'),
+                    'type'  => 'float',
+                );
             }
         }
-        
-        $filters->load();
-        
-        if (!empty($filters)) {
-            foreach ($filters as $filter) {
-                $ret .= self::generateFacetXMLFromFilter($filter, $store);
+
+        return $items;
+    }
+
+    public static function getSchemaCategories()
+    {
+        static $items;
+
+        if (!isset($items)) {
+            $items[] = array(
+                'name'        => 'categories',
+                'title'       => 'Categories',
+                'type'        => 'text',
+                'weight'      => self::WEIGHT_CATEGORIES,
+                'text_search' => 'Y',
+            );
+
+            $items[] = array(
+                'name'        => 'category_ids',
+                'title'       => 'Categories - IDs',
+                'type'        => 'text',
+                'weight'      => 0,
+                'text_search' => 'N',
+                'facet'       => self::_generateFacetFromCustom('Category', 0, 'category_ids', 'select'),
+            );
+        }
+        return $items;
+    }
+
+    public static function getSchemaTags()
+    {
+        static $items;
+
+        if (!isset($items)) {
+            $items[] = array(
+                'name'        => 'tags',
+                'title'       => 'Tags',
+                'type'        => 'text',
+                'weight'      => self::WEIGHT_TAGS,
+                'text_search' => 'Y',
+            );
+
+            $items[] = array(
+                'name'        => 'tag_ids',
+                'title'       => 'Tags - IDs',
+                'type'        => 'text',
+                'weight'      => 0,
+                'text_search' => 'N',
+                'facet'       => self::_generateFacetFromCustom('Tag', 0, 'tag_ids', 'select'),
+            );
+        }
+        return $items;
+    }
+
+    public static function getSchema($attributeIds = Simtech_Searchanise_Model_Queue::NOT_DATA, $store = null, $isPrice = false)
+    {
+        static $schema;
+
+        if (isset($schema)) {
+            return $schema;
+        }
+
+        $schema = array();
+
+        if ($attributeIds === Simtech_Searchanise_Model_Queue::NOT_DATA) {
+            $schema = self::getSchemaCustomerGroupsPrices();
+
+            if ($items = self::getSchemaCategories()) {
+                foreach ($items as $keyItem => $item) {
+                    $schema[] = $item;
+                }
+            }
+
+            if ($items = self::getSchemaTags()) {
+                foreach ($items as $keyItem => $item) {
+                    $schema[] = $item;
+                }
+            }
+            $schema[] = array(
+                'name'        => 'is_in_stock',
+                'title'       => 'Stock Availability',
+                'type'        => 'text',
+                'weight'      => 0,
+                'text_search' => 'N',
+            );
+            $schema[] = array(
+                'name'        => 'quantity_decimals',
+                'title'       => 'Quantity - decimals',
+                'type'        => 'text',
+                'weight'      => 0,
+                'text_search' => 'N',
+            );
+            $schema[] = array(
+                'name'        => 'created_at',
+                'title'       => 'Created Date',
+                'type'        => 'text',
+                'weight'      => 0,
+                'text_search' => 'N',
+            );
+            $schema[] = array(
+                'name'        => 'position',
+                'title'       => 'Position',
+                'type'        => 'text',
+                'weight'      => 0,
+                'text_search' => 'N',
+            );
+        }
+
+        if ($attributes = self::getProductAttributes($attributeIds, $store, $isPrice)) {
+            foreach ($attributes as $attribute) {
+                if ($items = self::getSchemaAttribute($attribute)) {
+                    foreach ($items as $keyItem => $item) {
+                        $schema[] = $item;
+                    }
+                }
             }
         }
-        
-        return $ret;
+
+        return $schema;
     }
     
-    public static function generateFacetXMLCategories()
-    {
-        return self::generateFacetXMLFromCustom('Category', 0, 'category_ids', 'select');
-    }
-
-    public static function generateFacetXMLPrices($store = null)
-    {
-        $entry = '';
-
-        $filters = Mage::getResourceModel('catalog/product_attribute_collection')
-            ->setItemObjectClass('catalog/resource_eav_attribute')
-            ->addFieldToFilter('main_table.frontend_input', array('eq' => 'price'));
-
-        if ($store) {
-            $filters->addStoreLabel($store->getId());
-        }
-
-        $filters->load();
-        
-        if (!empty($filters)) {
-            foreach ($filters as $filter) {
-                $entry .= self::generateFacetXMLFromFilter($filter, $store);
-            }
-        }
-
-        return $entry;
-    }
-    
-    public static function generateFacetXMLTags()
-    {
-        return self::generateFacetXMLFromCustom('Tag', 0, 'tag_ids', 'select');
-    }
-    
-    public static function getXMLHeader($store = null)
+    public static function getHeader($store = null)
     {
         $url = '';
         
-        if (empty($store)) {
+        if ($store) {
             $url = Mage::app()->getStore()->getBaseUrl();
         } else {
             $url = $store->getUrl();
         }
-        
         $date = date('c');
-        
-        return '<?xml version="1.0" encoding="UTF-8"?>' .
-            '<feed xmlns="http://www.w3.org/2005/Atom" xmlns:cs="http://searchanise.com/ns/1.0">' . 
-            '<title>Searchanise data feed</title>' . 
-            "<updated>{$date}</updated>" . 
-            "<id><![CDATA[{$url}]]></id>";
-    }
-    
-    public static function getXMLFooter()
-    {
-        return '</feed>';
+
+        return array(
+            'id'      => $url,
+            'updated' => $date,
+        );
     }
 }

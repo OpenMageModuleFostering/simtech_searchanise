@@ -15,6 +15,27 @@
 class Simtech_Searchanise_Model_Advanced extends Mage_CatalogSearch_Model_Advanced
 {
     /**
+     * Add advanced search filters to product collection
+     *
+     * @param   array $values
+     * @return  Mage_CatalogSearch_Model_Advanced
+     */
+    public function addFilters($values)
+    {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+            return parent::addFilters($values);
+        }
+        $collection = $this->getProductCollection();
+     
+        if (!$collection && !method_exists($collection, 'checkSearchaniseResult') || !$collection->checkSearchaniseResult()) {
+            return parent::addFilters($values);
+        }
+        // Nothing,
+        
+        return $this;
+    }
+
+    /**
      * Prepare product collection
      *
      * @param Mage_CatalogSearch_Model_Resource_Advanced_Collection $collection
@@ -30,7 +51,7 @@ class Simtech_Searchanise_Model_Advanced extends Mage_CatalogSearch_Model_Advanc
             $collection->setSearchaniseRequest(Mage::helper('searchanise')->getSearchaniseRequest());
         }
      
-        if ((!method_exists($collection, 'checkSearchaniseResult')) || (!$collection->checkSearchaniseResult())) {
+        if (!$collection && !method_exists($collection, 'checkSearchaniseResult') || !$collection->checkSearchaniseResult()) {
             return parent::prepareProductCollection($collection);
         }
 

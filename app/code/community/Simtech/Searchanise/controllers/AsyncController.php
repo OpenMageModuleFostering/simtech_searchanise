@@ -13,7 +13,6 @@
 ****************************************************************************/
 class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Action
 {
-    const PARENT_PRIVATE_KEY = 'parent_private_key';
     protected $_notUseHttpRequestText = null;
     protected $_flShowStatusAsync = null;
     
@@ -72,14 +71,8 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
     public function indexAction()
     {
         if (Mage::helper('searchanise/ApiSe')->getStatusModule() == 'Y') {
-            $parentPrivateKey = $this->getRequest()->getParam(self::PARENT_PRIVATE_KEY);
-            if ((empty($parentPrivateKey)) || 
-                (Mage::helper('searchanise/ApiSe')->getParentPrivateKey() !== $parentPrivateKey)) {
-                $checkKey = false;
-            } else {
-                $checkKey = true;
-            }
-
+            $checkKey = Mage::helper('searchanise')->checkPrivateKey();
+            
             // not need because it checked in the "Async.php" block
             // if (Mage::helper('searchanise/ApiSe')->checkStartAsync()) {
             if (true) {
@@ -94,11 +87,13 @@ class Simtech_Searchanise_AsyncController extends Mage_Core_Controller_Front_Act
                     @ignore_user_abort(true);
                     @set_time_limit(0);
                     if ($checkKey && $this->getRequest()->getParam('display_errors') === 'Y') {
-                        @error_reporting(E_ALL);
+                        @error_reporting(E_ALL | E_STRICT);
                         @ini_set('display_errors', 1);
+                        @ini_set('display_startup_errors', 1);
                     } else {
                         @error_reporting(0);
                         @ini_set('display_errors', 0);
+                        @ini_set('display_startup_errors', 0);
                     }
                     $flIgnoreProcessing = false;
                     if ($checkKey && $this->getRequest()->getParam('ignore_processing') === 'Y') {
