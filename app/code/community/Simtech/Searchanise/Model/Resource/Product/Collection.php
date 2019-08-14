@@ -93,7 +93,8 @@ class Simtech_Searchanise_Model_Resource_Product_Collection extends Mage_Catalog
                 ->getProductIdsString();
             
             if (!empty($product_ids)) {
-                $this->getSelect()->order("FIELD (e.entity_id, {$product_ids}) {$dir}");
+                $sortBy = "FIELD(e.entity_id, {$product_ids}) {$dir}";
+                $this->getSelect()->order(new Zend_Db_Expr($sortBy));
             }
             
         } else {

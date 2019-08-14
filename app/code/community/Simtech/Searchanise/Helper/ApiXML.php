@@ -145,27 +145,31 @@ class Simtech_Searchanise_Helper_ApiXML extends Mage_Core_Helper_Data
 
         // <image_link>
         {
-            $image_link = '';
-            $small_image = null;
-            // Uncomment the lines below if it is necessary to send image icons.
-            //~ $small_image = $product->getData('small_image');
-            
-            if (!empty($small_image) && $small_image != 'no_selection') {
-                $image_link = $product->getSmallImageUrl();
+            $imageLink = '';
+
+            $image = $product->getData('image');
+
+            if (!empty($image) && $image != 'no_selection') { 
+                $imageLink = $product->getImageUrl();
                 
             } else {
-                $image = $product->getData('image');
-                
-                if (!empty($image) && $image != 'no_selection') { 
-                    $image_link = $product->getImageUrl(); 
+                $smallImage = $product->getData('small_image');
+
+                if (!empty($smallImage) && $smallImage != 'no_selection') {
+                   $imageLink = $product->getSmallImageUrl();
+
                 } else {
                     $thumbnail = $product->getData('thumbnail');
                     
-                    if (!empty($thumbnail) && $thumbnail != 'no_selection') { $image_link = $product->getThumbnailUrl(); }
+                    if (!empty($thumbnail) && $thumbnail != 'no_selection') { 
+                        $imageLink = $product->getThumbnailUrl(); 
+                    }
                 }
             }
-            
-            $entry .= '<cs:image_link><![CDATA[' . $image_link . ']]></cs:image_link>' . self::XML_END_LINE;
+
+            if ($imageLink != '') {
+                $entry .= '<cs:image_link><![CDATA[' . $imageLink . ']]></cs:image_link>' . self::XML_END_LINE;
+            }
         }
         // </image_link>
         

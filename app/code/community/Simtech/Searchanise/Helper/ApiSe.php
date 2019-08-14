@@ -143,10 +143,10 @@ class Simtech_Searchanise_Helper_ApiSe
         return self::getServiceUrl($onlyHttp) . '/widgets/v1.0/init.js';
     }
 
-    public static function checkSearchaniseResult($searchaniseRequest = null)
+    public static function checkSearchaniseResult($searchaniseRequest = null, $store = null)
     {
-        if ((self::getStatusModule() == 'Y') &&
-            (self::checkExportStatus()) &&
+        if ((self::getStatusModule($store) == 'Y') &&
+            (self::checkExportStatus($store)) &&
             (!empty($searchaniseRequest))) {
 
             if ($searchaniseRequest === true) {

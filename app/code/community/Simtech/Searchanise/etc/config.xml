@@ -15,7 +15,7 @@
 <config>
     <modules>
         <Simtech_Searchanise>
-            <version>0.1.5</version>
+            <version>1.0.7</version>
         </Simtech_Searchanise>
     </modules>
     <frontend>
@@ -70,11 +70,22 @@
             </updates>
         </layout>
     </frontend>
+    <admin>
+        <routers>
+            <searchanise>
+                <use>admin</use>
+                <args>
+                    <module>Simtech_Searchanise</module>
+                    <frontName>searchanise</frontName>
+                </args>
+            </searchanise>
+        </routers>
+    </admin>
     <adminhtml>
         <menu>
             <catalog>
                 <children>
-                    <searchanise module="searchanise">
+                    <searchanise translate="title" module="searchanise">
                         <title>Searchanise</title>
                         <action>searchanise/index/index</action>
                     </searchanise>
@@ -440,6 +451,7 @@
             <catalogsearch>
                 <rewrite>
                     <result>Simtech_Searchanise_Block_Result</result>
+                    <autocomplete>Simtech_Searchanise_Block_Autocomplete</autocomplete>
                 </rewrite>
             </catalogsearch>
             <!-- END -->
@@ -455,7 +467,7 @@
     <default>
         <searchanise>
             <config>
-                <version>1.2</version>
+                <version>1.0.7</version>
                 <search_timeout>3</search_timeout>
                 <request_timeout>15</request_timeout>
                 <ajax_async_timeout>1</ajax_async_timeout>

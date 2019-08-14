@@ -126,6 +126,8 @@ class Simtech_Searchanise_Helper_Data extends Mage_Core_Helper_Abstract
                 $params['union'] = array();
             }
         }
+
+        return $this;
     }
     
     protected function getUrlSuggestion($suggestion)

@@ -18,7 +18,14 @@
         <button type="submit" title="<?php echo $this->__('Search') ?>" class="button"><span><span><?php echo $this->__('Search') ?></span></span></button>
         <div id="search_autocomplete" class="search-autocomplete"></div>
         <?php
-            if(Mage::getStoreConfigFlag('advanced/modules_disable_output/Simtech_Searchanise')) {
+            $showDefaultAutocomplete = true;
+            $searchaniseDisabled = Mage::getStoreConfigFlag('advanced/modules_disable_output/Simtech_Searchanise');
+            if (!$searchaniseDisabled) {
+                $store = Mage::app()->getStore();
+                $showDefaultAutocomplete = !Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true, $store);
+            }
+            
+            if ($showDefaultAutocomplete) {
         ?>
         <script type="text/javascript">
         //<![CDATA[

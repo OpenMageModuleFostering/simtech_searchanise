@@ -16,8 +16,9 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
     protected function _toHtml()
     {
         $html = '';
+        $store = Mage::app()->getStore();
         
-        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true)) {
+        if (!Mage::helper('searchanise/ApiSe')->checkSearchaniseResult(true, $store)) {
             return $html;
         }
 
@@ -97,6 +98,14 @@ class Simtech_Searchanise_Block_Jsinit extends Mage_Core_Block_Text
             //]]>
             </script>";
         
+        // Uncomment the lines below if it is necessary to hide price in search widget
+        // $html .= '
+        //     <style type="text/css">
+        //         .snize-price {
+        //             display: none !important;
+        //         }
+        //     </style>';
+
         return $html;
     }
 }
