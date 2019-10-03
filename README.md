@@ -1,3 +1,5 @@
+
+
 ## Original Package Description
 
 Searchanise Connector Add-on allows you to easily integrate Searchanise rapid search service in your online store. The add-on provides both an admin panel and a customer area widgets.
